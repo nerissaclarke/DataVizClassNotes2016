@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+
+<style>
+
+/*These are the classes included in the file*/
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 14px;
+}
+
+h1{
+  color: steelblue;
+  display: center;
+
+}
+
+table{
+  text-align: center;
+}
+
+.chart {
+    display: block;
+    background: #f8f8f8;
+    margin: 2em auto;
+    padding: 12px;
+  }
+
+.bartxt{
+ font-size: 12px;
+ font-family: sans-serif;
+ stroke: black;
+}
+
+.barGroups{
+   fill: black;
+}
+
+
+.bar {
+  fill: steelblue;
+}
+
+ .xAxis path, .xAxis line{
+  fill: none;
+  stroke: #000;
+}
+
+.yAxis path, .yAxis line{
+  fill: none;
+  stroke: #000;
+}
+
+
+svg {
+  text-align: inline block;
+}
+
+
+/*.bar:hover {
+  fill: darkblue;
+}
+
+</style>
+
+
+<body>
+<table>
+ 
+  <tr>
+    <td> <h1>University Farms: Barley Production (1931)</h1>
+    </td>
+  </tr>
+  <tr>
+    <td class= "chart"></td>
+    </tr>
+  </body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script>
+
+//Margin conventions
+var margin = {top: 25, right: 20, bottom: 135, left: 40},
+    width = 950 - margin.left - margin.right,
+    height = 600 - margin.top - margin.bottom;
+
+//var years= ["1931", "1932", "1931" || "1932"];
+//var color = d3.scale.ordinal()
+//  .range(["red", "green", "blue", "orangered", "yellowgreen", "violet", "purple"]);
+
+
+//Chart (in the correct spot)
+var svg = d3.select(".chart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var xScale = d3.scale.ordinal()
+    //.domain(["Glabron", "Manchuria", "No. 457", "No. 462", "No. 475", "Peatland", "Svansota", "Trebi", "Velvet", "Wisconsin No. 38"])
+    .rangeRoundBands([0, width], .5);
+
+var yScale = d3.scale.linear()
+
+    .range([height, 5]);
+
+
+//Data
+d3.tsv("barley.tsv", function(error, data) {
+  
+  if (error) return console.warn(error);
+ 
+  data.forEach(function(d) {
+      d.yield = +d.yield;
+      d.year = +d.year;
+    })
+
+  console.log(data);
+ //Connect the data to the axes
+
+//filter the data to the specific data you are interested in
+   var sampleDataUF = data.filter(function(d) {return d.site == 'University Farm'; });
+   var sampleDataUF31 = data.filter(function(d) {return d.site == 'University Farm' && d.year == "1931"; });
+   var sampleDataUF32 = data.filter(function(d) {return d.site == 'University Farm' && d.year == "1932"; });
+   var y1931= data.filter(function(d){return d.year=="1931";});
+   var y1932= data.filter(function(d){return d.year=="1932";});
+
+   console.log(sampleDataUF31);
+
+ var sampleDataUF31 = sampleDataUF31.sort(function(a,b){return d3.descending(a.yield, b.yield)});
+ 
+  xScale.domain(d3.set(sampleDataUF31.map(function(d) { return d.variety;})))
+  yScale.domain([0, d3.max(sampleDataUF31, function(d) { return d.yield;} ) ])
+
+    //Axes
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .orient("left")
+    //.ticks()
+    .tickPadding(8);
+
+//Figure out a way reduce the decimal points in the data
+
+
+   //Call the Axes (within the data)
+svg.append("g")
+      .attr("class", "xAxis")
+      .attr("transform", "translate(0," + height + ")")
+      .style("font-weight", "bold")
+      .call(xAxis)
+      .selectAll("text")
+      .style("text-anchor", "end")
+      .attr("dx", "-.8em")
+      .attr("dy", "-.55em")
+      .attr("transform", "rotate(-90)" );
+
+svg.append("g")
+      .attr("class", "yAxis")
+      .call(yAxis)
+      .append("text")
+      .attr("transform", "rotate(0)")
+      .attr("transform", "translate( 70, -40)")
+      //Add datalabels
+      .attr("y", 6)
+      .attr("dy", "1em")
+      .style("text-anchor", "end")
+      .text("Total Yield")
+      .style("font-weight", "bold")
+      .style("font-family", "trade gothic")
+      .style("font-size", "14px");
+
+
+//Create a databind
+var yieldGroups = svg.selectAll(".barGroups")
+  .data(sampleDataUF31)
+  .enter().append("g")
+  .attr("class", "barGroups")
+
+//Add rectangles to your data
+var bars = svg.selectAll(".bar")
+      .data(sampleDataUF31)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return xScale(d.variety); })
+      .attr("width", xScale.rangeBand())
+      .attr("y", function(d) { return yScale(d.yield); })
+      .attr("height", function(d) { return height - yScale(d.yield); })
+
+
+
+ 
+
+//Add data labels
+
+
+});
+      
+
+
+</script>

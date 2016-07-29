@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
+
+<style type="text/css">
+ /*css to go here*/
+ body {
+   font-family: arial, sans;
+   width: 720px;
+   margin: 20px auto;
+ }
+ h1{
+   text-align: center;
+ }
+ svg {
+   /*border:1px solid #f0f;*/
+ }
+ .axis text {
+   font-size: 12px;
+   fill: #777;
+ }
+ .axis path {
+   display: none;
+ }
+ .axis line {
+   stroke-width:1px;
+   stroke: #ccc;
+   stroke-dasharray: 2px 2px;
+ }
+.bars:hover {
+  fill: yellow;
+  border: 2px;
+}
+
+</style>
+
+
+<body>
+<table>
+ 
+  <tr>
+    <td> <h1>University Farms: Barley Production</h1>
+    </td>
+  </tr>
+  <tr>
+    <td class= "chart"></td>
+    </tr>
+  </body>
+
+
+<script>
+//Margins
+var margin = {top: 50, right: 50, bottom: 20, left: 50};
+var width = 950 - margin.left - margin.right,
+   height = 400 - margin.top - margin.bottom;
+
+//Scales. For bar charts, need to use an ordinal scale. 
+//RangePoints positions the label on the axis in the middle(useful for a circle on an ordinal plain. Rangeband gives you an interval and is better used for bar charts
+//Reference re: rangepoints vs. rangebands. https://github.com/d3/d3-3.x-api-reference/blob/master/Ordinal-Scales.md
+var xScale = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
+
+var yScale = d3.scale.linear()
+   .range([height, 0]);
+
+//Create axes
+var xAxis = d3.svg.axis()
+   .scale(xScale)
+   .tickSize(-height)
+   .tickPadding(8)
+   .orient("bottom");
+
+var yAxis = d3.svg.axis()
+   .scale(yScale)
+   .tickSize(-width)
+   .tickPadding(8)
+   .orient("left");
+
+//Create container to hold chart
+var svg = d3.select("body").append("svg")
+   .attr("width", width + margin.left + margin.right)
+   .attr("height", height + margin.top + margin.bottom)
+ .append("g")
+   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//colorscale
+var colorScale = d3.scale.category10();
+
+//Add data here
+d3.tsv("barley.tsv", ready)
+
+ function ready (error, data) {
+//This is a convention to always add before you use the daa
+  if (error) return console.warn(error);
+
+   console.log(data)
+
+data.forEach(function(d) {
+   d.val = +d.val;
+   d.year = +d.year;
+   d.yield= +d.yield
+})
+
+//Add data labels
+
+ //filter the data to the specific data you are interested in
+   var sampleDataUF = data.filter(function(d) {return d.site == 'University Farm'; });
+   var sampleDataUF31 = data.filter(function(d) {return d.site == 'University Farm' && d.year == "1931"; });
+   var sampleDataUF32 = data.filter(function(d) {return d.site == 'University Farm' && d.year == "1932"; });
+   var y1931= data.filter(function(d){return d.year=="1931";});
+   var y1932= data.filter(function(d){return d.year=="1932";});
+
+   var sampleDataUF31 = sampleDataUF31.sort(function(a,b){return d3.descending(a.yield, b.yield)});
+
+console.log(sampleDataUF31);
+
+//Connect x and y scales to data so it knows what to plot
+//For ordinal scales, you want to map data using d3.set
+
+ xScale.domain(d3.set(sampleDataUF31.map(function(d) { return d.variety; })).values())
+ yScale.domain([0, d3.max(sampleDataUF31, function(d) {return d.yield; })]).nice()
+
+//Call the x and y axis so that they show up on the webpage
+ svg.append("g")
+ .attr("class","x axis")
+ .attr("transform","translate(0," + height + ")")
+ .call(xAxis);
+ 
+ svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+
+var barGroup = svg. selectAll(".bargroup")
+   .data(sampleDataUF31)
+   .enter().append("g")
+    .attr("class", "bargroup")
+
+
+var bars = barGroup.selectAll(".bars")
+   .data(sampleDataUF31)
+   .enter().append("rect")
+   .attr("class", "bars")
+   .attr("x", function(d) { return xScale(d.variety); })
+   .attr("width", xScale.rangeBand())
+   .attr("y", function(d) { return yScale(d.yield); })
+   .attr("height", function(d) { return height - yScale(d.yield); })
+    //Apply colorscale here
+    .style("fill", function(d){return colorScale(d.variety); })
+    
+
+var dataLabels = svg.selectAll(".bartxt")
+  .data(sampleDataUF31)
+  .enter().append("text")
+   .text(function(d){return d.yield;})
+   .attr("class", "bartxt")
+   .attr("x", function(d) { return xScale(d.variety)+10; })
+   .attr("y", function(d) { return yScale(d.yield) +25; })
+     .style("font","14px sans-serif")
+     .style("fill", "none")
+     .style("font-weight", "bold")
+ 
+//On Hover add data labels: WHY ISN"T THIS WORKING??
+d3.selectAll(".bars")
+    .on("mouseenter", function(d) {
+         console.log(d);
+
+         d3.select(this)
+           .style("fill", "black")
+
+         //var barClass = d3.select(this).attr("class").split(" ")[1];
+         //d3.selectAll("." + barClass)
+         //This isn't exactly working
+         dataLabels.style("fill", "white")
+       
+   }) 
+
+    .on("mouseleave", function() {
+      
+      d3.select(this)
+        .style("fill", function(d){return colorScale(d.variety); })
+
+      dataLabels
+         .style("fill", "none")
+   })
+
+
+//Add Update Chart Function here. To allow you to choose between years
+
+//Buttons
+
+
+
+
+
+
+
+//This is the end of the data function here
+
+};
+
+//Other Resources for basic bar charts:
+//https://github.com/d3/d3/wiki/Ordinal-Scales
+//http://bl.ocks.org/mbostock/3885304
+
+</script>

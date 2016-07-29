@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
+
+<style type="text/css">
+/*css to go here*/
+body {
+  font-family: arial, sans;
+  width: 720px;
+  margin: 20px auto;
+}
+svg {
+  border: 1px solid #f0f;
+  fill: none;
+}
+.axis text {
+  font-size: 12px;
+  fill: #777;
+}
+.axis path {
+  display: none;
+}
+.axis line {
+  stroke-width:1px;
+  stroke: #ccc;
+  /*stroke-dasharray: 2px 2px;*/
+}
+.bars {
+   fill: #0c0;
+   width: 4px;
+
+}
+
+
+</style>
+
+<body>
+   <div class= "chart"></div>
+   <div class= "chart"></div>
+   <div class= "chart"></div>
+</body>
+
+<script>
+//Adding in the axes
+var margin = {top: 50, right: 50, bottom: 50, left: 50};
+var width = 750 - margin.left - margin.right,
+   height = 400 - margin.top - margin.bottom;
+
+var xScale = d3.scale.ordinal()
+   .rangePoints([0, width]);
+
+var yScale = d3.scale.linear()
+   .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+   .scale(xScale)
+   .tickSize(-height)
+   .tickPadding(8)
+   .orient("bottom");
+
+var yAxis = d3.svg.axis()
+   .scale(yScale)
+   .tickSize(-width)
+   .tickPadding(8)
+   .orient("right");
+
+var svg = d3.select("body").select(".chart1").append("svg")
+   .attr("width", width + margin.left + margin.right)
+   .attr("height", height + margin.top + margin.bottom)
+ .append("g")
+   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svg.append("line")
+   .attr("x1", 0)
+   .attr("x2", width)
+   .attr("y1", height)
+   .attr("y2", height)
+   .style("stroke","#000")
+   .style()
+
+svg.append("line")
+   .attr("x1", 0)
+   .attr("x2", 0)
+   .attr("y1", height)
+   .attr("y2", 0)
+   .style("stroke","#000")
+
+
+d3.tsv("barley.tsv", ready)
+
+ function ready(error, data) {
+
+  if (error) return console.warn(error);
+
+console.log(data)
+
+ var sampleDataUF = data.filter(function(d) {return d.site == 'University Farm'; });
+ var sampleDataC= data.filter(function(d) {return d.site == 'Crookston'; });
+ var sampleDataGR= data.filter(function(d) {return d.site == 'Grand Rapids'; });
+ var sampleDataD= data.filter(function(d) { return d.site == 'Duluth'; });
+ var sampleDataM= data.filter(function(d) { return d.site == 'Morris'; });
+ var sampleDataW= data.filter(function(d) { return d.site == 'Waseca'; });
+ 
+ var y1931= data.filter(function(d){return d.year=="1931";});
+ var y1932= data.filter(function(d){return d.year=="1932";});
+
+
+//This picks what part of the data is displayed on the x axis
+ xScale.domain(d3.set(data.map(function(d) {return d.site; })).values());
+ //yScale.domain([0,d3.max(data, function(d) {return d.yield; })]);
+
+svg.append("g")
+ .attr("class","x axis")
+ .attr("transform","translate(0," + height + ")")
+ .call(xAxis);
+
+
+
+  x.domain(data.map(function(d) { return d.letter; }));
+  y.domain([0, d3.max(data, function(d) { return d.frequency; })]);
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Frequency");
+
+  svg.selectAll(".bar")
+      .data(data)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d.letter); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) { return y(d.frequency); })
+      .attr("height", function(d) { return height - y(d.frequency); });
+
+function type(d) {
+  d.frequency = +d.frequency;
+  return d;
+}
+
+//svg.append("g")
+// .attr("class", "y axis")
+// .call(yAxis);
+//
+//svg.append("rect")
+
+
+ };
+
+//ideas for making bar charts: http://bl.ocks.org/mbostock/3885304
+
+</script>
+

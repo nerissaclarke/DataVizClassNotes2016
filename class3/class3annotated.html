@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
+
+<style type="text/css">
+ /*css to go here*/
+ body {
+   font-family: arial, sans;
+   width: 720px;
+   margin: 20px auto;
+ }
+ svg {
+   /*border:1px solid #f0f;*/
+ }
+ .axis text {
+   font-size: 12px;
+   fill: #777;
+ }
+ .axis path {
+   display: none;
+ }
+ .axis line {
+   stroke-width:1px;
+   stroke: #ccc;
+   stroke-dasharray: 2px 2px;
+ }
+
+</style>
+
+<body>
+</body>
+
+<script>
+//Margins
+var margin = {top: 50, right: 50, bottom: 20, left: 50};
+var width = 950 - margin.left - margin.right,
+   height = 400 - margin.top - margin.bottom;
+
+//Scales. For bar charts, need to use an ordinal scale. 
+//RangePoints positions the label on the axis in the middle(useful for a circle on an ordinal plain. Rangeband gives you an interval and is better used for bar charts
+//Reference re: rangepoints vs. rangebands. https://github.com/d3/d3-3.x-api-reference/blob/master/Ordinal-Scales.md
+var xScale = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
+
+var yScale = d3.scale.linear()
+   .range([height, 0]);
+
+//Create axes
+var xAxis = d3.svg.axis()
+   .scale(xScale)
+   .tickSize(-height)
+   .tickPadding(8)
+   .orient("bottom");
+
+var yAxis = d3.svg.axis()
+   .scale(yScale)
+   .tickSize(-width)
+   .tickPadding(8)
+   .orient("left");
+
+//Create container to hold chart
+var svg = d3.select("body").append("svg")
+   .attr("width", width + margin.left + margin.right)
+   .attr("height", height + margin.top + margin.bottom)
+ .append("g")
+   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//colorscale
+var colorScale = d3.scale.category10();
+
+//Add data here
+d3.tsv("barley.tsv", ready)
+
+ function ready (error, data) {
+//This is a convention to always add before you use the daa
+  if (error) return console.warn(error);
+
+   console.log(data)
+
+//Filter data into specific site we want to see
+ var sampleData = data.filter(function(d) { return d.site == 'University Farm'; })
+
+console.log(sampleData);
+
+//Connect x and y scales to data so it knows what to plot
+//For ordinal scales, you want to map data using d3.set
+
+ xScale.domain(d3.set(sampleData.map(function(d) { return d.variety; })).values())
+ yScale.domain([0, d3.max(sampleData, function(d) {return d.yield; })]).nice()
+
+//Call the x and y axis so that they show up on the webpage
+ svg.append("g")
+ .attr("class","x axis")
+ .attr("transform","translate(0," + height + ")")
+ .call(xAxis);
+ 
+ svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+
+var bars = svg.selectAll(".bars")
+   .data(sampleData)
+   .enter().append("rect")
+   .attr("class", "bars")
+   .attr("x", function(d) { return xScale(d.variety); })
+      .attr("width", xScale.rangeBand())
+      .attr("y", function(d) { return yScale(d.yield); })
+      .attr("height", function(d) { return height - yScale(d.yield); })
+      //Apply colorscale here
+      .style("fill", function(d){return colorScale(d.variety); })
+
+data.forEach(function(d) {
+   d.val = +d.val;
+})
+
+
+
+//This is the end of the data function here
+
+//Other Resources for basic bar charts:
+//https://github.com/d3/d3/wiki/Ordinal-Scales
+//http://bl.ocks.org/mbostock/3885304
+
+};
+
+</script>

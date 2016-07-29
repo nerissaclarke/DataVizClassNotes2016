@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style type="text/css">
+  /*css to go here*/
+
+svg {
+  	border: 2px solid #000;
+  }
+</style>
+
+<body>
+
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8">
+  //Accesses the most recent version of d3
+</script>
+
+<script>
+  //JS to go here\
+
+//Hardcoding the data here. Use "option" to select a number of lines and do bulk edits
+var data = [
+  {"group": "II", "x":10, "y" : 9.14},
+  {"group": "II", "x":8, "y" : 8.14},
+  {"group": "II", "x":13, "y" : 8.74},
+  {"group": "II", "x":9, "y" : 8.77},
+  {"group": "II", "x":11, "y" : 9.26},
+  {"group": "II", "x":14, "y" : 8.1},
+  {"group": "II", "x":6, "y" : 6.13},
+  {"group": "II", "x":4, "y" : 3.1},
+  {"group": "II", "x":12, "y" : 9.13},
+  {"group": "II", "x":7, "y" : 7.26},
+  {"group": "II", "x":5, "y" : 4.74}
+];
+
+//Margin conventions. These margins are used with the svg, and determine the size of the canvas we are working with
+var margin = {top: 20, right: 10, bottom: 20, left: 10};
+var width = 720 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+//Create an SVG group. Transform/Translate moves the data around the page
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//Establish a scale for the x and y axis. Linear shows that it is a continous variable. The domain is the input (what the data says) and the range is the output (what is seen on the page). Domain can also be determined dynamically, within a function so that it updates based on the data (rather than being hard coded)
+
+var xScale = d3.scale.linear()
+	.domain([0,20])
+	.range([0, width]);
+
+var yScale = d3.scale.linear()
+	.domain([0,20])
+	.range([height,0]);
+
+//Use the scale to establish the axis. Orient bottom puts the axis on the bottom of the SVG and orients the tickmarks in the correct way
+var xAxis = d3.svg.axis()
+	.scale(xScale)
+	.orient("bottom");
+
+//Add circle shapes and then bind them to the data that we have put above. Then use d.variable names to place the circles themselves
+var dots = d3.select("body").select("svg")
+	.selectAll("circle")
+	.data(data)
+	.enter().append("circle")
+	.attr("r",10)
+	.attr("cx", function(d) { return xScale(d.x); })
+	.attr("cy", function(d) { return yScale(d.y); })
+
+// In order to see the code, you need to make sure that you call the axis, this executes the code. Here we connect the x axis together into a group so that you can use it later.
+
+svg.append("g")
+  .attr("class","x axis")
+  .attr("transform","translate(0," + height + ")")
+  .call(xAxis)
+</script>

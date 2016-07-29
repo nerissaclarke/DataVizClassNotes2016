@@ -1,0 +1,156 @@
+
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8">
+
+// This is the link that connects us to the most recent d3 library, it is found on the d3 website//
+
+</script>
+
+
+<style type="text/css">
+  /*css to go here*/
+  
+  body {
+    font-family: garamond, sans;
+    color: blue;
+    width: 740px;
+    margin: 20px auto;
+    /*This describes the color and shape of the text that is inside the body. 
+    width is how wide the body text is margin is how far away it is from the sides (order: top right bottom left. If only 3 values it represents: top left/right bottom. Two values: top/bottom left/right, 1 value: all 4 sides)*/
+  }
+  svg {
+    /*This is the image that we are drawing, the overall thing
+    svg stands for scalable vector graphics, can scale to any size, and then can be used in an image.
+    You can adjust the size but unclear how to shrink the whole image without cutting any of it off*/
+    border:1px solid #f0f;
+  }
+  .axis text {
+    font-size: 16px;
+    fill: gray;
+    font-family: "Avenir";
+    position: "align-left";
+  } 
+  /* This is the axis labels . Fill changes the color of the numbers. */
+  .axis path {
+    display: none;
+  }
+  /*This is the block of color behind the grid. If you change display to "solid" the entire rectangle becomes filled in, "fill" changes the color */
+  .axis line {
+    stroke-width:.5px;
+    stroke: #ccc;
+  }
+  /* This represents the gridlines. 
+  stroke width changes the width of the gridlines, 
+  "stroke" is the color of the gridlines */
+
+  .anscombe-circle-group text {
+    fill: #aaa;
+    font-size: 15px;
+    font-family: "times new roman";
+  }
+/*This is the text that is next to the data points*/
+
+  .anscombe-circle-group circle {
+    fill: red;
+    stroke: #fff;
+    stroke-width: 1px;
+  }
+  /*This is the outline/shape of the data point dots on the grid*/
+</style>
+
+<body> 
+<p>Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, At accusam aliquyam diam diam dolore dolores duo eirmod eos erat, et nonumy sed tempor et et invidunt justo labore Stet clita ea et gubergren, kasd magna no rebum. sanctus sea sed takimata ut vero voluptua. est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat.</P> 
+
+<!--This is where the text is found*/-->
+</body>
+
+
+
+<script>
+//JS to go here
+var data = [
+  {"group": "II", "x":10, "y" : 9.14},
+  {"group": "II", "x":8, "y" : 8.14},
+  {"group": "II", "x":13, "y" : 8.74},
+  {"group": "II", "x":9, "y" : 8.77},
+  {"group": "II", "x":11, "y" : 9.26},
+  {"group": "II", "x":14, "y" : 8.1},
+  {"group": "II", "x":6, "y" : 6.13},
+  {"group": "II", "x":4, "y" : 3.1},
+  {"group": "II", "x":12, "y" : 9.13},
+  {"group": "II", "x":7, "y" : 7.26},
+  {"group": "II", "x":5, "y" : 4.74}
+];
+//All the datapoints we are interested in. Grouped together so that in the future we can connect them together/work with them as a group? //
+
+var margin = {top: 25, right: 50, bottom: 50, left: 25};
+
+//This is where the axis is within the SVG image. how much space there is here
+
+var width = 720 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+//This is the size of whatever we want it to be. We use it later in the code to determine the size of the SVG (see var svg) and the parameters of our axes. Making the size of the image fit inside the margins
+
+var x = d3.scale.linear()
+    .range([0, width])
+    .domain([0, 16]);
+    //.range is goes from 0 to width: end point (makes it adaptable if the width changes). .domain is the initial values of initial data, .range is the data zoomed in or out (as displayed).
+var y = d3.scale.linear()
+    .range([height, 0])
+    .domain([0, 11]);
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .tickSize(height)
+    .tickPadding(8)
+    .orient("top");
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .tickSize(width)
+    .tickPadding(0)
+    .orient("left");
+
+    //Var x, y, xAxis, Yaxis are all helping us to create the  axes. More info about axes at: https://www.dashingd3js.com/d3js-axes.
+    //the X and Y variables set up a sense of scale here (linear). The X and Y axis variables place that scale within the svg
+
+   //Domain and range: Domain is the input (proportion starting values), range is the output(the size of the final version, i.e. either zoomed in/out). 
+   //Range is associated with width, domain is associated with height. read more here: https://www.dashingd3js.com/d3js-scales
+   //tick size: height/width...(use -width to put the axis on the right side. -height to put the axis on the bottom)
+   //tick padding: shows where the axis labels go compared to the axis
+   //orient: Whether the axes are coming from the bottom or the top. top: means axis go down from the numbers. Bottom: axis go up from the numbers.
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+//select the body of the document, then add a SVG element into the HTML there, give it attributes of height/width, associated with the margins we created above
+
+    //When you say ".append" it basically creates a new object and then ".attr" gives the new object the following attributes ...
+    //.append (new object), .attrib ("name of attribute", value of attribute)
+
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + (height) + ")")
+    .call(xAxis);
+svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform", "translate(" + (width) + ",0)")
+    .call(yAxis);
+
+    //g groups things together, based on similar attributes. 
+
+var circleGroup = svg.selectAll(".anscombe-circle-group")
+    .data(data)
+  .enter()
+    .append("g")
+    .attr("class", "anscombe-circle-group")
+    .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+//selects all  in the group, calls it "circle group", adds data, gives it a class, and then adds in "the values of x,y" into the chart
+
+
+circleGroup.append("circle")
+    .attr("r", 5);
+circleGroup.append("text")
+    .text(function(d) { return "(" + d.x + "," + d.y + ")"; })
+    .attr("dx", 6);
+</script>

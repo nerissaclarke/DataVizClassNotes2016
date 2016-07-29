@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style type="text/css">
+
+  body {
+    font-family: arial, sans;
+    font-size: 14px;
+    width: 960px;
+    margin: 40px auto;
+  }
+  svg {
+    border: 1px solid #f0f; 
+  }
+
+  .map-container path {
+    fill:#d0d0d0;
+    stroke:#fff;
+    stroke-width:.3px;
+  }
+
+    .divisions {
+
+    fill: none;
+    stroke: #000;
+    stroke-width: .25;
+
+  }
+
+
+</style>
+
+<body>
+
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+
+<script type="text/javascript">
+//Margins
+
+var width = 300,
+    height = 200;
+
+//Different type of map projection here
+//Scale and position, show how to focus the maps. Can tweak it to make it smaller. Need to change both factors at the same time. Can be finicky. Use the centroid to help orient the states
+var projection = d3.geo.albersUsa()
+    .scale(300)
+    .translate([width/2, height/2]);
+
+var path = d3.geo.path()
+  .projection(projection);
+
+//Add a color scale here. Use every color scale by mike bostock
+var colorScale = d3.scale.linear()
+  .range(["#ffeda0","#feb24c","#f03b20"])
+  .domain([-10, 5]);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+queue()
+    .defer(d3.csv, "tidy-drought-data.csv")
+    .defer(d3.json, "climate-divisions2.json")
+    .await(ready);
+
+function ready(error, data, climateDivisions) {
+  if (error) return console.warn(error);
+
+   console.log("climateDivisions", climateDivisions);
+   console.log("drought data", data);
+
+//Create a dictionary here. Add empty objects
+
+var droughtIndexLookup = {};
+
+
+  data.forEach(function(d) {
+    d.val = +d.val;
+    droughtIndexLookup[d.id] = d.val;
+  });
+// colorScale.domain(d3.extent(data, function(d) { return d.val; }));
+
+  nestedDroughtData = d3.nest()
+    .key(function(d) { return d.year })
+    .key(function(d) { return d.id; })
+    .entries(data)
+
+//Found within the data
+
+var climateDivisionsPath = topojson.feature(climateDivisions, climateDivisions.objects.divisions).features
+
+console.log(climateDivisionsPath);
+
+var years = d3.set(data.map(function(d) {return d.years})).values()
+
+var yearSVG = d3.select("body").selectAll(".yearSVG")
+    .data(nestedDroughtData)
+  .enter().append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .each(function(yearData) {
+
+
+//Use path here based on the line generator that you created earlier. Paths as default are filled black
+        d3.select(this).selectAll(".divisions")
+          .data(climateDivisionsPath)
+          .enter().append("path")
+          .attr("class","divisions")
+          .attr("d", path)
+          .style("fill", function(climateDiv) {
+
+
+            var droughtIndex = nestedDroughtData[year][climateDiv.id][0].val
+
+            return colorScale(droughtIndex);
+
+//With a filter
+           //var droughtIndex = nestedDroughtData
+           //       .filter(function(d) { return d.key == yearData.key })[0].values
+           //       .filter(function(d) { return d.key == climateDiv.id })[0].values[0].val
+           //     //console.log(droughtIndex);
+           //    return colorScale(droughtIndex);
+           //   })
+          
+
+//This is a dictionary lookup, easier to look at, easy way to look it up
+      //var  droughtIndex = droughtIndexLookup[d.id]
+
+          })
+
+
+
+    })
+
+
+ 
+
+}
+
+
+</script>

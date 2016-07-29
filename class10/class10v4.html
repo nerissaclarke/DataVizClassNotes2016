@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style type="text/css">
+.counties {
+    fill: none;
+    stroke: #000;
+    stroke-width: .25;
+    stroke-dasharray: 1, 1;
+}
+.background {
+  fill: none;
+}
+#countyText {   
+    position: absolute;         
+    text-align: center;         
+/*    width: 60px;                  
+    height: 28px;   */              
+    padding: 2px;               
+    font: 12px sans-serif;      
+    background: lightsteelblue; 
+    border: 0px;        
+    border-radius: 8px;         
+    pointer-events: none;
+    opacity: 0;         
+}
+</style>
+<body>
+<div id='countyText'> </div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script type="text/javascript">
+  
+var width = 960,
+    height = 500,
+    centered;
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+var projection = d3.geo.albersUsa()
+    .scale(1070)
+    .translate([width / 2, height / 2]);
+var path = d3.geo.path()
+    .projection(projection);
+svg.append("rect")
+    .attr("class", "background")
+    .attr("width", width)
+    .attr("height", height)
+    .on("click", clicked);
+var g = svg.append("g")
+queue()
+    .defer(d3.csv, "guns-history.csv")
+    .defer(d3.json, "us.json")
+    .await(ready);
+var colorScale = d3.scale.threshold() 
+    .domain([1,910,1107,1880,2716,15782])
+    .range(["#fff","#ffeda0","#fed976","#feb24c","#fd8d3c","#fc4e2a"]);
+function ready(error, guns, us) {
+  if (error) return console.warn(error);
+  console.log(us);
+  console.log(topojson.feature(us, us.objects.counties).features);
+  console.log(guns);
+  var countyFeatures = topojson.feature(us, us.objects.counties).features;
+  var stateFeatures = topojson.feature(us, us.objects.states).features;
+  gunsLookup = {};
+  guns.forEach(function(d) {
+    d.count3 = +d.count3;
+    gunsLookup[d.FIPS] = d.count3;
+  })
+  locationLookup = {};
+ guns.forEach(function(d) {
+    locationLookup[d.FIPS] = d.county;
+  })
+console.log(gunsLookup)
+    g.append("g")
+      .attr("id", "county")
+    .selectAll(".counties")
+    .data(countyFeatures)
+    .enter().append("path")
+    .attr("class","counties")
+    .attr("d", path)
+    .style("fill", function(d) {
+         return gunsLookup[d.id] > 0 ? "#bfbfbf" : "#fff" ;
+    })  
+    .on("click", clicked)
+    .on("mouseenter", function(d) {
+        d3.select(this)
+        .style("stroke-width", 1.5)
+        .style("stroke-dasharray", 0)
+        d3.select("#countyText")
+        .transition()
+        .style("opacity", 1)
+        .style("left", (d3.event.pageX) + "px")
+        .style("top", (d3.event.pageY) + "px")
+        .text(locationLookup[d.id])
+    })
+    .on("mouseleave", function(d) { 
+        d3.select(this)
+        .style("stroke-width", .25)
+        .style("stroke-dasharray", 1)
+        d3.select("#countyText")
+        .transition()
+        .style("opacity", 0);
+    } )
+    g.append("g")
+      .attr("id", "state")
+    .selectAll(".states")
+    .data(stateFeatures)
+    .enter().append("path")
+    .attr("class","states")
+    .attr("d", path)
+    .style("fill", "none")
+    .style("stroke","#000")
+  g.selectAll(".bubbles")
+    .data(countyFeatures)
+    .enter().append("g")
+    .attr("class","bubbles")
+    .attr("transform",function(d) 
+        { return "translate(" + path.centroid(d) + ")"})
+    .append("circle")
+    .attr("r", function(d) {
+         return Math.sqrt(gunsLookup[d.id])/Math.PI;
+    })
+    .style("fill", function(d) {
+         return colorScale(gunsLookup[d.id]);
+    })
+   .style("fill-opacity", .25)
+   .style("stroke", "#000")
+   .style("pointer-events","none")
+}
+function clicked(d) {
+  var x, y, k;
+console.log(d);
+  if (d && centered !== d) {
+    var centroid = path.centroid(d);
+    x = centroid[0];
+    y = centroid[1];
+    k = 4;
+    centered = d;
+  } else {
+    x = width / 2;
+    y = height / 2;
+    k = 1;
+    centered = null;
+  }
+  g.selectAll("path")
+      .classed("active", centered && function(d) { return d === centered; });
+  g.transition()
+      .duration(750)
+      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+      .style("stroke-width", 1.5 / k + "px");
+}
+</script>
+```

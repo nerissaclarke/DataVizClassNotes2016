@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style type="text/css">
+
+  body {
+    font-family: arial, sans;
+    font-size: 14px;
+    width: 960px;
+    margin: 40px auto;
+  }
+  svg {
+    border: 1px solid #f0f; 
+  }
+
+  .map-container path {
+    fill:#d0d0d0;
+    stroke:#fff;
+    stroke-width:.3px;
+  }
+
+  .divisions {
+
+    fill: none;
+    stroke: #000;
+    stroke-width: .25;
+
+  }
+
+</style>
+
+<body>
+<p id='loading'>its loading</p>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+
+<script type="text/javascript">
+  
+var svgWidth = 300,
+    svgHeight = 200;
+
+var colorScale = d3.scale.linear()
+  .range(["#662506", "#fff"])
+  .domain([-10, 5])
+
+queue()
+    .defer(d3.csv, "tidy-drought-data.csv")
+    .defer(d3.json, "climate-divisions2.json")
+    .await(ready);
+
+function ready(error, data, climateDivisions) {
+  if (error) return console.warn(error);
+
+  var droughtIndexLookup = {};
+  data.forEach(function(d) {
+    d.val = +d.val;
+    droughtIndexLookup[d.id] = d.val;
+  });
+
+  // colorScale.domain(d3.extent(data, function(d) { return d.val; }));
+
+  nestedDroughtData = d3.nest()
+    .key(function(d) { return d.year })
+    .key(function(d) { return d.id; })
+    .map(data)
+
+var years = d3.set(data.map(function(d) { return d.year })).values()
+
+climateDivisionsPath = topojson.feature(climateDivisions, climateDivisions.objects.divisions).features
+
+  // console.log(climateDivisionsPath);
+years.forEach(function(d) {
+
+  drawChart(d, svgWidth, svgHeight);
+
+})
+
+function drawChart(year, width, height) {
+
+var svg = d3.select("body")
+    .data(year)
+    .append("svg")
+    .attr("class", "map")
+    .attr("width", width)
+    .attr("height", height)
+
+  svg.append("text")
+        .attr("dx", 10)
+        .attr("dy", 20)
+        .text(year)
+
+  var projection = d3.geo.albersUsa()
+      .scale(300)
+      .translate([width/2, height/2]);
+
+  var path = d3.geo.path()
+    .projection(projection);
+
+  svg.selectAll(".divisions")
+          .data(climateDivisionsPath)
+          .enter().append("path")
+          .attr("class","divisions")
+          .attr("d", path)
+          .style("fill", function(climateDiv) {
+
+            var droughtIndex = nestedDroughtData[year][climateDiv.id][0].val
+
+            return colorScale(droughtIndex);
+
+          })
+}
+
+
+function updateChart(svgSelection, year, width, height) {
+
+  svgSelection.selectAll("path").remove();
+
+var year = svgSelection.select("text").text();
+
+svgSelection.attr("width", width)
+  .attr("height", height)
+
+  var projection = d3.geo.albersUsa()
+      .scale(width)
+      .translate([width/2, height/2]);
+
+  var path = d3.geo.path()
+    .projection(projection);
+
+  console.log(year)
+
+    svgSelection.selectAll(".divisions")
+    .data(climateDivisionsPath)
+    .enter().append("path")
+    .attr("class","divisions")
+    .attr("d", path)
+    .style("fill", function(climateDiv) {
+
+      var droughtIndex = nestedDroughtData[year][climateDiv.id][0].val
+
+      return colorScale(droughtIndex);
+
+    })
+}
+
+  d3.selectAll(".map")
+    .on("mouseenter", function(d) {
+      console.log(d);
+     updateChart(d3.select(this), d, 600, 400) 
+   })    
+    .on("mouseleave", function(d) {
+      // console.();
+     updateChart(d3.select(this), d, 300, 200) 
+   });
+
+
+ d3.select("#loading").text("it's not loading!")
+}
+
+
+
+
+</script>

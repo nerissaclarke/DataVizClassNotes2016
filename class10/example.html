@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style type="text/css">
+
+  body {
+    font-family: arial, sans;
+    font-size: 14px;
+    width: 960px;
+    margin: 40px auto;
+  }
+  svg {
+    border: 1px solid #f0f; 
+  }
+
+  .map-container path {
+    fill:#d0d0d0;
+    stroke:#fff;
+    stroke-width:.3px;
+  }
+
+</style>
+
+<body>
+<p id='wait'>Wait for it... </p>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+
+<script type="text/javascript">
+  
+var width = 100,
+    height = 50;
+
+var years = d3.range(1895, 2014);
+
+var pdsiByDivisionAndYear = d3.map(),
+    droughtAreaByYear = d3.map();
+
+var projection = d3.geo.albersUsa()
+    .scale(100)
+    .translate([width/2, height/2]);
+
+var path = d3.geo.path()
+  .projection(projection);
+
+queue()
+    .defer(d3.csv, "tidy-drought-data.csv")
+    .defer(d3.json, "climate-divisions2.json")
+    .await(ready);
+
+function ready(error, data, climateDivisions) {
+  if (error) return console.warn(error);
+
+  console.log("climateDivisions", climateDivisions);
+  console.log("tidy data", data);
+
+
+  var climateDivisionsFeature = topojson.feature(climateDivisions, climateDivisions.objects.divisions).features;
+
+  data.forEach(function(d) {
+    d.val = +d.val;
+  });
+
+  droughtLevelByYearAndId = d3.nest()
+      .key(function(d) { return d.year; })
+      .key(function(d) { return d.id; })
+      .entries(data);
+
+  console.log("nestedData", droughtLevelByYearAndId);
+
+// Single One
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  svg.append("g")
+      .attr("class", "map-container")
+    .selectAll("path")
+      .data(climateDivisionsFeature)
+    .enter().append("path")
+      .attr("d", path)
+      .style("fill", function(climateDiv) {
+        var drought2013data = droughtLevelByYearAndId.filter(function(d) { return d.key == '2013'; })[0].values
+        var thisClimateDivDroughtData = drought2013data.filter(function(d) { return d.key == climateDiv.id; })[0].values
+        return thisClimateDivDroughtData[0].val <= -1.25 ? "gold" : "#ccc";
+      });
+
+
+// Nested 
+
+var maps = d3.select("body").selectAll(".maps")
+  .data(droughtLevelByYearAndId)
+  .enter().append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("class","maps")
+      .each(function(svgData) {
+
+        d3.select(this)
+          .append("g")
+            .attr("class", "map-container")
+          .selectAll("path")
+            .data(climateDivisionsFeature)
+          .enter().append("path")
+            .attr("d", path)
+            .style("fill", function(climateDiv) {
+              var drought2013data = droughtLevelByYearAndId.filter(function(d) { return d.key == svgData.key; })[0].values
+              var thisClimateDivDroughtData = drought2013data.filter(function(d) { return d.key == climateDiv.id; })[0].values
+              return thisClimateDivDroughtData[0].val <= -1.25 ? "gold" : "#ccc";
+            });
+      })
+
+  d3.select("p").remove()
+
+
+
+
+}
+
+
+
+</script>

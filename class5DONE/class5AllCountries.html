@@ -1,0 +1,345 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<style type="text/css">
+ 
+body {
+  font: 8px sans-serif;
+}
+
+.axis {
+    stroke-dasharray: 2, 2;
+    stroke-opacity: .5;
+    stroke: #000;
+}
+
+.domain {
+    fill: none;
+    stroke: #000;
+}
+
+.dots {
+    fill: steelblue;
+}
+
+div {
+  display: inline-block;
+}
+
+.countryLines {
+
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 1;
+}
+
+.UnitedStates {
+
+  stroke: purple;
+  stroke-width: 2;
+}
+
+
+</style>
+
+<body>
+</body>
+
+<script>
+
+var margin = {top: 20, right: 20, bottom: 20, left: 20};
+var width = 150 - margin.left - margin.right,
+    height = 300 - margin.top - margin.bottom;
+
+var xScale = d3.time.scale()
+    .range([0,width])
+
+var yScale = d3.scale.linear()
+    .range([height, 0])
+
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .tickSize(-height)
+    .orient("bottom")
+
+var parseDate = d3.time.format("%Y").parse,
+    formatDate = d3.time.format("%Y");
+
+var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .tickSize(-width)
+    .orient("right")
+    .tickFormat(d3.format("$,.2"))
+ 
+ var incomeLine = d3.svg.line()
+     .interpolate("cardinal")
+     .x(function(d) { return xScale(d.year); })
+     .y(function(d) { return yScale(d.val); })
+
+
+d3.csv("incomes.csv", function(error, data) {
+
+   if (error) return console.warn(error);
+
+   data.forEach(function(d) {
+       d.val = +d.val;
+       d.year = parseDate(d.year);
+       d.jsVersion = new Date(d.year);
+       d.formattedYear = formatDate(d.year);
+   })
+
+   var medianData = data.filter(function(d) { return  d.cutoff == 'cop50' })
+
+   xScale.domain(d3.extent(data, function(d) { return d.year; }))
+   yScale.domain(d3.extent(data, function(d) { return +d.val; }))
+
+
+
+  var nestedCountryData = d3.nest()
+    .key(function(d) { return d.country })
+    .sortKeys(d3.descending)
+    .entries(medianData)
+
+
+  var divContainer = d3.select("body")
+    .selectAll("div")
+    .data(nestedCountryData)
+  .enter().append("div");
+
+divContainer.append("h1")
+  .text(function(d) { return d.key })
+
+var svg = divContainer.append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.append("path")
+      .datum(function(d) { return d.values })
+    .attr("class",  "countryLines " )
+    .attr("d", incomeLine )
+
+  // svg.selectAll(".countryLines")
+  //   .data(nestedCountryData)
+  //   .enter().append("path")
+  //   .attr("class", function(d) { return "countryLines " + d.key.replace(" ", "") })
+  //   .attr("d", function(d) {console.log(d.values); return incomeLine(d.values); })
+
+
+   svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform","translate(" + width + ",0)")
+    .call(yAxis)
+
+  svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform","translate(0," + height + ")")
+    .call(xAxis)
+
+
+ });
+
+nestedCountryDAta= d3.nest()
+.key(function(d){return d.country})
+.sortKeys(d3.descending)
+.rollup(function(values){
+return{
+allValues: values
+maxValue: d3.max (values, function)
+minVal: d3.min (values,)
+totalVal: d3.sum(values,)
+
+lastval: values[values.length-1]
+
+
+})
+
+
+
+}
+
+
+
+
+</script>
+
+
+
+//
+//
+//
+//<!DOCTYPE html>
+//<meta charset="utf-8">
+//
+//<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8">//</script>
+//<style type="text/css">
+// 
+// .axis {
+// 	stroke-dasharray: 2,2;
+// 	stroke-opacity: .5;
+// 	stroke: #000;
+// }
+//
+//.domain{
+//	fill: none;
+//	stroke:#000;
+//}
+//
+//.dots{
+//	fill: steelblue;
+//}
+//.incomeLine{
+//	fill: none;
+//	stroke-width: 2;
+//	stroke: steelblue;
+//}
+//
+//.countryLine{
+//  fill: none;
+//  stroke-width: 2;
+//  stroke: steelblue;
+//}
+//
+//.UnitedStates{
+//  stroke:purple;
+//  stroke-width: 1;
+//}
+//
+//div{
+//  display: inline-block;
+//}
+//
+//</style>
+//
+//<body>
+//</body>
+//
+//<script>
+//
+//var margin = {top: 60, right: 80, bottom: 80, left: 80};
+//var width = 600 - margin.left - margin.right,
+//    height = 400 - margin.top - margin.bottom;
+//
+//var xScale = d3.time.scale()
+//    .range([0,width])
+//
+//var yScale = d3.scale.linear()
+//    .range([height, 0])
+//
+//var xAxis = d3.svg.axis()
+//    .scale(xScale)
+//    .tickSize(-height)
+//    .orient("bottom")
+//
+//var parseDate = d3.time.format("%Y").parse,
+//    formatDate = d3.time.format("%Y");
+//
+//var yAxis = d3.svg.axis()
+//    .scale(yScale)
+//    .tickSize(-width)
+//    .orient("right")
+//    //This allows you to format the ticks (add in % of $ as a styling thing)
+//    .tickFormat(d3.format("$,.2"))
+// 
+// 
+//  var svg = d3.select("body").append("svg")
+//    .attr("width", width + margin.left + margin.right)
+//    .attr("height", height + margin.top + margin.bottom)
+//  .append("g")
+//    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+//
+//var incomeLine = d3.svg.line()
+//	//.interpolate("basis")
+//	//other options: cardinal, linear, basis, step, check out in spline editor under blocks
+//	.x(function(d){return xScale(d.year);})
+//	.y(function(d){return yScale(d.val);})
+//
+//d3.csv("incomes.csv", function(error, data) {
+//
+//   if (error) return console.warn(error);
+//
+//   console.log(data);
+//
+//   //this is a time scale
+//
+//   data.forEach(function(d) {
+//       d.val = +d.val;
+//       d.year = parseDate(d.year);
+//       d.jsVersion = new Date(d.year);
+//       d.formattedYear = formatDate(d.year);
+//   })
+//
+//   xScale.domain(d3.extent(data, function(d) { return d.year; }))
+//   yScale.domain(d3.extent(data, function(d) { return +d.val; }))
+//
+//   svg.append("g")
+//       .attr("transform","translate(" + width + ",0)")
+//       .attr("class", "axis")
+//       .call(yAxis)
+//
+//  svg.append("g")
+//       .attr("transform","translate(0," + height + ")")
+//       .attr("class", "axis")
+//       .call(xAxis)
+//
+//
+//var medianData= data.filter(function(d){return d.cutoff=="cop50"})
+//
+//
+//console.log(medianData);
+//
+//svg.selectAll(".dots")
+//      .data(medianData)
+//  .enter().append("circle")
+//      .attr("class","dots")
+//      .attr("cx", function(d) { return xScale(d.year); })
+//      .attr("cy", function(d) { return yScale(d.val); })
+//      .attr("r", 8)
+//
+//	////This doesn't work . creates multiple paths
+//	//svg.select(".incomeLine")
+//	//	.data(usData)
+//	//	.enter().append("path")
+//
+//svg.append("path")
+//.datum(medianData)
+//.attr("class", "incomeLine")
+//.attr("d", incomeLine)
+////d attribute here is a way to indicate they are coming up with a path line, about to //draw a shape
+//
+////need to use divs to do inline block
+//
+////sorting: default right now
+//
+//var nestedCountryData = d3.nest()
+//  .key(function(d){return d.country})
+//  //this allows you to sort
+//  .sortKeys(d3.descending)
+//  .entries(medianData)
+//
+//
+//
+//
+//var nestedCountryData= d3.nest()
+//  .key(function(d){ return d.country})
+//  .entries(medianData);
+//
+//console.log(nestedCountryData)
+//
+//svg.selectAll(".countryLines")
+//    .data(nestedCountryData)
+//    .enter().append("path")
+//    .attr("class", function(d) { return "countryLines " + d.key.replace(" ", "") })
+//    .attr("d", function(d) {console.log(d.values); return incomeLine(d.values); })
+//
+//svg.append("path")
+//.datum(function(d){return d.values})
+//.
+//
+//
+// });
+//
+//</script>

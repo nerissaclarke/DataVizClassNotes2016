@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<style type="text/css">
+ 
+body {
+  font: 8px sans-serif;
+}
+
+.axis {
+  stroke-dasharray: 2, 2;
+  stroke-opacity: .5;
+  stroke: #000;
+}
+
+.domain {
+  fill: none;
+  stroke: #fff;
+}
+
+.dots {
+  fill: steelblue;
+}
+
+div {
+  display: inline-block;
+}
+
+.countryLines {
+
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1;
+}
+
+.United.States {
+
+  stroke: purple;
+  stroke-width: 2;
+}
+
+
+</style>
+
+<body>
+</body>
+
+<script>
+
+var margin = {top: 20, right: 50, bottom: 20, left: 20};
+var width = 1000 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var xScale = d3.time.scale()
+  // .range([0,width])
+
+var yScale = d3.scale.linear()
+  .range([height, 0])
+
+var xAxis = d3.svg.axis()
+  .scale(xScale)
+  .tickSize(-height)
+  .orient("bottom")
+
+var parseDate = d3.time.format("%Y").parse,
+  formatDate = d3.time.format("%Y");
+
+var yAxis = d3.svg.axis()
+  .scale(yScale)
+  .tickSize(-width)
+  .orient("right")
+  .tickFormat(d3.format("$,"))
+ 
+ var incomeLine = d3.svg.line()
+  .interpolate("cardinal")
+  .x(function(d) { return xScale(d.year); })
+  .y(function(d) { return yScale(d.val); })
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+
+d3.csv("incomes.csv", function(error, data) {
+
+   if (error) return console.warn(error);
+
+   data.forEach(function(d) {
+    d.val = +d.val;
+    d.year = parseDate(d.year);
+   })
+
+   var medianData = data.filter(function(d) { return  d.cutoff == 'cop50' })
+
+   // nesting the data based on FIRST - the percentile (cutoff) then country
+  nestedCountryData = d3.nest()
+    .key(function(d) { return d.cutoff })
+    .key(function(d) { return d.country })
+    .sortKeys(d3.descending)
+    .entries(data)
+
+    // We're making an ordinal scale to place each group tag on the width of the svg
+    // we want to set the ordinal scales on the number of percentiels
+var groupScale = d3.scale.ordinal()
+    .rangeRoundBands([0, width - margin.left - margin.right])
+    .domain(d3.set(nestedCountryData.map(function(d) { return d.key })).values())
+
+console.log(groupScale.rangeBand())
+  // Now the xScale we use for the lines should use the range of their group's width, no the svg width
+   xScale.domain(d3.extent(data, function(d) { return d.year; }))
+         .range([0, groupScale.rangeBand()]);
+
+   yScale.domain(d3.extent(data, function(d) { return +d.val; }))
+
+  var cutoffGroup = svg.selectAll(".cutoffGroup")
+      .data(nestedCountryData)
+    .enter().append("g")
+      .attr("class","cutoffGroup")
+      .attr("transform", function(d) { return "translate(" + groupScale(d.key) + ",0)" });
+
+    cutoffGroup.append("text")
+      .text(function(d) { return d.key })
+
+    cutoffGroup.selectAll("countryLines")
+      .data(function(d) { return d.values })
+    .enter().append("path")
+    .attr("class",  function(d) { return "countryLines " + d.key })
+    .attr("d", function(d) { return incomeLine(d.values); })
+
+
+   cutoffGroup.append("g")
+    .attr("class", "y axis")
+    .attr("transform","translate(" + width + ",0)")
+    .call(yAxis)
+
+  cutoffGroup.append("g")
+    .attr("class", "x axis")
+    .attr("transform","translate(0," + height + ")")
+    .call(xAxis)
+
+
+ });
+
+
+</script>

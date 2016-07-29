@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<style type="text/css">
+ 
+body {
+  font: 12px sans-serif;
+}
+
+.axis {
+  /*stroke-dasharray: 2, 2;*/
+  stroke-opacity: .1;
+  stroke: #000;
+  padding: 10px;
+}
+/*This determines the color of the  */
+.domain {
+  fill: none;
+  stroke: blue;
+}
+
+div {
+  display: inline-block;
+}
+
+.countryLines {
+
+  fill: none;
+  stroke: gray;
+  stroke-width: 1;
+  stroke-opacity: .25;
+}
+
+.United.States {
+
+  stroke: steelblue;
+  stroke-width: 3;
+  stroke-opacity: 1;
+}
+/*.united.states (This allows you select 2 things its like "united && states")*/
+
+</style>
+
+<body>
+</body>
+
+<script>
+//Example: Small multiples
+
+//Margins
+var margin = {top: 20, right: 30, bottom: 20, left: 60};
+var width = 300 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+//Scales
+var xScale = d3.time.scale()
+  .range([0,width])
+
+var yScale = d3.scale.linear()
+  .range([height, 0])
+
+//Axes
+var xAxis = d3.svg.axis()
+  .scale(xScale)
+  .tickSize(-height)
+  .tickPadding(10)
+  .orient("bottom")
+//Timescale
+var parseDate = d3.time.format("%Y").parse,
+  formatDate = d3.time.format("%Y");
+//("%Y") formats it in the 2015 4 digit year format. For other formats, see http://www.d3noob.org/2013/01/format-date-time-axis-with-specified.html
+
+var yAxis = d3.svg.axis()
+  .scale(yScale)
+  .tickSize(width)
+  .tickPadding(10)
+  .orient("left")
+  .tickFormat(d3.format("$,"))
+
+
+ //tickformat here adds a $ and a , between the numbers
+
+ //Line generator
+ var incomeLine = d3.svg.line()
+  .interpolate("cardinal")
+  .x(function(d) { return xScale(d.year); })
+  .y(function(d) { return yScale(d.val); })
+
+
+//Add data here
+  d3.csv("incomes.csv", function(error, data) {
+
+   if (error) return console.warn(error);
+
+ //Filter data
+  var data8010 = data.filter(function(d) { return  d.year >= 1980 });  
+
+//manipulate data into integers/into date format  
+data8010.forEach(function(d) {
+    d.val = +d.val;
+    d.year = parseDate(d.year);
+   })
+
+  console.log(data8010); 
+
+   var medianData = data.filter(function(d) { return  d.cutoff == 'cop50' })
+
+//Within the data function, add domain as input data. Adding + here makes d.val act as an integer only in a local way.
+   xScale.domain(d3.extent(data8010, function(d) { return d.year; }))
+   yScale.domain([0, d3.max(data8010, function(d) { return +d.val; })])
+
+//Nest the data (double nest). First level is the biggest section. So in this example. Income cutoff are each of the charts and then countries are the lines within the charts. 
+//In another example if you want there to be a chart for each year, you nest year first, then the contents of the chart within year
+  nestedCountryData = d3.nest()
+        .key(function(d) { return d.cutoff })
+        .key(function(d) { return d.country })
+    //.sortKeys: sort nested data
+    //.sortKeys(d3.descending)
+    .entries(data8010)
+
+      console.log(nestedCountryData); 
+
+//Use nested country data to create a compartment (div) for each cutoff # 
+//(In this situation: d.key = d.cutoff)
+  var divContainer = d3.select("body")
+    .selectAll("div")
+    .data(nestedCountryData)
+  .enter().append("div");
+
+//ADD A TEXT LABEL HERE...
+//var countryLabel = d3.select( foreach)  
+//var countryLookup = {};
+
+//country.forEach (function(d){
+//  countryLookup[]
+//})
+
+//MAKE THIS LABEL BETTER!
+divContainer.append("h1")
+  .text(function(d) {return d.key})
+
+
+//Add a chart container (svg) within each of the div's, that is part of a group
+var svg = divContainer.append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+//Select all countryLines before countryLines have been defined. Use the data within the nested structure to access the lower levels of the nest. Under this new databind, now d.key refers to d.country (NOT d.cutoff)
+
+
+svg.selectAll("countryLines")
+      .data(function(d) { return d.values })
+    .enter().append("path")
+    .attr("class",  function(d) { return "countryLines " + d.key })
+    .attr("d", function(d) { return incomeLine(d.values); })
+    //Adds a hover functionality here that is only viewable in the console  
+    .on("mouseenter", function(d) {
+      d3.select(this)     
+      .style("stroke-width", "3")
+      .style("stroke", "steelblue")
+      .style("stroke-opacity", ".65")     
+
+
+
+//ADD TEXT BASED ON HOVERING
+    svg.append("text")
+    .text(function(d){return d.key})
+    .style("fill", "blue")
+//    .attr("x")
+//   .attr("y")
+    
+//THIS ISNT WORKING
+
+     // .select("text")
+    //  .style("fill", "#000")
+
+      console.log(d.key)
+    	})
+
+
+      .on("mouseleave", function(d) {
+        d3.select(this)
+        .style("stroke", "gray")
+        .style("stroke-width", "1")
+        .select("text")
+        .style("fill", "none")
+        .style("stroke-opacity", ".25")  
+  
+       d3.select(".United.States")
+       .style("stroke", "steelblue")
+       .style("stroke-width", "3")
+       .style("stroke-opacity", "1")
+    })
+
+    .on("click", function(d){
+      //Makes changes on one chart to highlight changes on other charts
+
+
+
+
+    })
+
+
+   svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform","translate(" + width + ",0)")
+    .call(yAxis)
+
+  svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform","translate(0," + height + ")")
+    .call(xAxis)
+
+
+ });
+
+
+    //nestedCountryData[20].values[0].values 
+
+    //var = switzerland d3.set(data.map(function(d){return d.key;}]].values()nestedcountrydata.filter( return d.key = switzerland;)
+    //...Tell them the specific side of things
+
+    //nested data{0}.key
+
+</script>

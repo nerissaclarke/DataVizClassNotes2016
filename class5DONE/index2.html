@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<style type="text/css">
+ 
+body {
+  font: 8px sans-serif;
+}
+
+.axis {
+	stroke-dasharray: 2, 2;
+	stroke-opacity: .5;
+	stroke: #000;
+}
+
+.domain {
+	fill: none;
+	stroke: #000;
+}
+
+.dots {
+	fill: steelblue;
+}
+
+div {
+  display: inline-block;
+}
+
+.countryLines {
+
+	fill: none;
+	stroke: steelblue;
+	stroke-width: 1;
+}
+
+.UnitedStates {
+
+  stroke: purple;
+  stroke-width: 2;
+}
+
+
+</style>
+
+<body>
+</body>
+
+<script>
+
+var margin = {top: 20, right: 20, bottom: 20, left: 20};
+var width = 150 - margin.left - margin.right,
+    height = 300 - margin.top - margin.bottom;
+
+var xScale = d3.time.scale()
+	.range([0,width])
+
+var yScale = d3.scale.linear()
+	.range([height, 0])
+
+var xAxis = d3.svg.axis()
+	.scale(xScale)
+	.tickSize(-height)
+	.orient("bottom")
+
+var parseDate = d3.time.format("%Y").parse,
+	formatDate = d3.time.format("%Y");
+
+var yAxis = d3.svg.axis()
+	.scale(yScale)
+	.tickSize(-width)
+	.orient("right")
+	.tickFormat(d3.format("$,.2"))
+ 
+ var incomeLine = d3.svg.line()
+ 	.interpolate("cardinal")
+ 	.x(function(d) { return xScale(d.year); })
+ 	.y(function(d) { return yScale(d.val); })
+
+
+d3.csv("incomes.csv", function(error, data) {
+
+   if (error) return console.warn(error);
+
+   console.log(data);
+
+   data.forEach(function(d) {
+   	d.val = +d.val;
+   	d.year = parseDate(d.year);
+   	d.jsVersion = new Date(d.year);
+   	d.formattedYear = formatDate(d.year);
+   })
+
+   var medianData = data.filter(function(d) { return  d.cutoff == 'cop50' })
+
+   xScale.domain(d3.extent(data, function(d) { return d.year; }))
+   yScale.domain(d3.extent(data, function(d) { return +d.val; }))
+
+
+
+  var nestedCountryData = d3.nest()
+    .key(function(d) { return d.country })
+    .sortKeys(d3.descending)
+    .entries(medianData)
+
+console.log(nestedCountryData)
+
+  var divContainer = d3.select("body")
+    .selectAll("div")
+    .data(nestedCountryData)
+  .enter().append("div");
+
+divContainer.append("h1")
+  .text(function(d) { return d.key })
+
+var svg = divContainer.append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.append("path")
+      .datum(function(d) { return d.values })
+    .attr("class",  "countryLines " )
+    .attr("d", incomeLine )
+
+  // svg.selectAll(".countryLines")
+  //   .data(nestedCountryData)
+  //   .enter().append("path")
+  //   .attr("class", function(d) { return "countryLines " + d.key.replace(" ", "") })
+  //   .attr("d", function(d) {console.log(d.values); return incomeLine(d.values); })
+
+
+   svg.append("g")
+    .attr("class", "y axis")
+    .attr("transform","translate(" + width + ",0)")
+    .call(yAxis)
+
+  svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform","translate(0," + height + ")")
+    .call(xAxis)
+
+
+ });
+
+
+</script>

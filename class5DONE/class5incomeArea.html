@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<style type="text/css">
+ 
+
+.axis {
+
+    stroke-dasharray: 2, 2;
+    stroke-opacity: .5;
+    stroke: #000;
+}
+
+.domain {
+    fill: none;
+    stroke: #000;
+}
+
+.dots {
+    fill: steelblue;
+}
+
+.incomeLine {
+
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 1;
+}
+
+.incomeArea {
+
+    fill: steelblue;
+    fill-opacity: .333;
+}
+
+</style>
+
+<body>
+</body>
+
+<script>
+//margins
+var margin = {top: 60, right: 80, bottom: 80, left: 80};
+var width = 600 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+//scales output    
+var xScale = d3.time.scale()
+    .range([0,width])
+
+var yScale = d3.scale.linear()
+    .range([height, 0])
+
+//Axes
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .tickSize(-height)
+    .orient("bottom")
+
+//date format
+var parseDate = d3.time.format("%Y").parse,
+    formatDate = d3.time.format("%Y");
+
+var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .tickSize(-width)
+    .orient("right")
+ 
+ //line generator
+ var incomeLine = d3.svg.line()
+     .interpolate("cardinal")
+     .x(function(d) { return xScale(d.year); })
+     .y(function(d) { return yScale(d.val); })
+
+ //area generator
+ var incomeArea = d3.svg.area()
+     .interpolate("cardinal")
+     .x(function(d) { return xScale(d.year); })
+     .y1(function(d) { return yScale(d.val); })
+     .y0(height)
+//chart container
+  var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//data
+d3.tsv("incomes.tsv", function(error, data) {
+
+   if (error) return console.warn(error);
+
+   console.log(data);
+//identify which variables are integers
+   data.forEach(function(d) {
+       d.val = +d.val;
+       //date formatting
+       d.year = parseDate(d.year);
+       d.jsVersion = new Date(d.year);
+       d.formattedYear = formatDate(d.year);
+   })
+//filter data
+   var usData = data.filter(function(d) { return d.country == 'United States' && d.cutoff == 'cop50' })
+//use the window to see what data is available to you
+   window.whateverTheDataIs = usData;
+
+//inside the data, add input into our scales (domain)
+   xScale.domain(d3.extent(data, function(d) { return d.year; }))
+   // yScale.domain(d3.extent(data, function(d) { return +d.val; }))
+   yScale.domain([23000,29000])
+
+   //call the axes (inside of the data)
+   svg.append("g")
+       .attr("class", "y axis")
+       .attr("transform","translate(" + width + ",0)")
+       .call(yAxis)
+
+  svg.append("g")
+      .attr("class", "x axis")
+       .attr("transform","translate(0," + height + ")")
+       .call(xAxis)
+
+//Add circles
+  svg.selectAll(".dots")
+      .data(usData)
+  .enter().append("circle")
+      .attr("class","dots")
+      .attr("cx", function(d) { return xScale(d.year); })
+      .attr("cy", function(d) { return yScale(d.val); })
+      .attr("r", 8)
+      //On hover, log the data to the console (helps us to see what we are looking at )
+      .on("mouseenter", function(d) {
+
+          console.log(d)
+
+      })
+
+//Use the line generator here to draw the line
+  svg.append("path")
+      .datum(usData)
+      .attr("class", "incomeLine")
+      .attr("d", incomeLine)
+
+//Use the area generator here to draw the area
+  svg.append("path")
+      .datum(usData)
+      .attr("class", "incomeArea")
+      .attr("d", incomeArea)
+
+//End of the data function
+ });
+
+
+</script>

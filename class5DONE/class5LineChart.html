@@ -1,0 +1,146 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<style type="text/css">
+ 
+ .axis {
+ 	stroke-dasharray: 2,2;
+ 	stroke-opacity: .5;
+ 	stroke: #000;
+ }
+
+.domain{
+	fill: none;
+	stroke:#000;
+}
+
+.dots{
+	fill: steelblue;
+}
+.incomeLine{
+	fill: none;
+	stroke-width: 2;
+	stroke: steelblue;
+}
+</style>
+
+<body>
+</body>
+
+<script>
+//This is a single line chart based on income data (Class 5)
+//Margins
+var margin = {top: 60, right: 80, bottom: 80, left: 80};
+var width = 600 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+//Scales
+var xScale = d3.time.scale()
+    .range([0,width])
+
+var yScale = d3.scale.linear()
+    .range([height, 0])
+
+// Axes
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .tickSize(-height)
+    .orient("bottom")
+
+//Time scale
+//parseDate helps to convert the data into a date format and then formatDate puts it into a format that you can use
+var parseDate = d3.time.format("%Y").parse,
+    formatDate = d3.time.format("%Y");
+
+var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .tickSize(-width)
+    .orient("right")
+    //This allows you to format the ticks (add in % of $ as a styling thing)
+    .tickFormat(d3.format("$,"))
+
+    //Adding the , in here adds a comma to the number
+    //custom formatting here
+    //make sure data is sorted correctly before you map the line, because otherwise the line will come out squiggly
+ 
+ //Add container to hold the chart
+  var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//This is the line generator. it specifies what the (x,y) points should be for points on the line
+var incomeLine = d3.svg.line()
+	.interpolate("basis")
+	//other options: cardinal, linear, basis, step, check out in spline editor under blocks
+	.x(function(d){return xScale(d.year);})
+	.y(function(d){return yScale(d.val);})
+
+//Add data
+d3.tsv("incomes.tsv", function(error, data) {
+
+   if (error) return console.warn(error);
+
+   //Look at data
+   console.log(data);
+
+//manipulate data to read as strings
+   data.forEach(function(d) {
+       d.val = +d.val;
+      
+      //this is a time scale  
+       d.year = parseDate(d.year);
+       d.jsVersion = new Date(d.year);
+       d.formattedYear = formatDate(d.year);
+   })
+
+//Specify the scales that will be used as input for the X & Y axes
+   xScale.domain(d3.extent(data, function(d) { return d.year; }))
+   yScale.domain(d3.extent(data, function(d) { return +d.val; }))
+
+//Call the axes. This is needed for the Axes to show up on the page
+   svg.append("g")
+       .attr("transform","translate(" + width + ",0)")
+       .attr("class", "axis")
+       .call(yAxis)
+
+  svg.append("g")
+       .attr("transform","translate(0," + height + ")")
+       .attr("class", "axis")
+       .call(xAxis)
+
+//filter data to a single state that is readable/usable for a chart
+var usData = data.filter(function(d){return d.country =="United States" && d.cutoff=="cop50"})
+console.log(usData);
+
+//Add circles at various data points
+svg.selectAll(".dots")
+      .data(usData)
+  .enter().append("circle")
+      .attr("class","dots")
+      .attr("cx", function(d) { return xScale(d.year); })
+      .attr("cy", function(d) { return yScale(d.val); })
+      .attr("r", 8)
+
+//This is what draws the line. Add a path by doing a databind (same as other shapes/lines). Make a reference to the line generator above to identify how to draw the line
+svg.append("path")
+.datum(usData)
+.attr("class", "incomeLine")
+.attr("d", incomeLine)
+//d attribute here is a way to indicate they are coming up with a path line, about to draw a shape
+
+
+
+//This is an example of what not to do. This doesn't work
+//  svg.select(".incomeLine")
+//  .data(usData)
+//  .enter().append("path")
+
+
+//This is the end of the data function
+ });
+
+</script>

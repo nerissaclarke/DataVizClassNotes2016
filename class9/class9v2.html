@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style type="text/css">
+
+h1{ 
+font-family: helvetica;
+font-size: 20; 
+text-align: center;
+font-weight: bold;
+color: #000066;
+}
+/*This is used to style the county border lines */
+.counties {
+
+    fill: none;
+    stroke: white;
+    stroke-width: .5;
+    /*stroke-dasharray: 1, 1;*/
+
+}
+
+/*This is used to map the labels  */
+#countyText {    
+    position: absolute;            
+    text-align: center;            
+    line-height: 10; 
+    padding: 50px, 50px, 50px, 50px;                
+    font: 12px helvetica; 
+    color: white;       
+    background: #000066;    
+    border: 10px solid #000066;        
+    border-radius: 8px;            
+    pointer-events: none;
+    opacity: 0;            
+}
+
+
+</style>
+
+<body>
+<h1> Where do guns purchased in Chicago end up? </h1>
+<div id='countyText'> </div>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+
+<script type="text/javascript">
+//SVG, margin conventions 
+
+var width = 960,
+    height = 500;
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+//This allows you to use multiple datasets at the same time
+queue()
+    .defer(d3.csv, "guns-history.csv")
+    .defer(d3.json, "us.json")
+    .await(ready);
+
+//Color scale. There needs to be the same number of threshold domains as ranges
+//Lots of ways for you to do this. Linear scale, Exponential Scale. Paul has a tool that automatically finds gradients for you
+
+var colorScale = d3.scale.threshold() 
+    .domain([0.0, 1.0, 100.0 , 500.0, 15000.0])
+    .range(["#fff", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f", "#2c2d54"]);
+  
+
+var colorScaleCircles = d3.scale.threshold() 
+    .domain([0.0, 1.0, 100.0 , 500.0, 15000.0])
+    .range(["#fff","#ffeda0","#fed976","#feb24c","#fd8d3c","#fc4e2a"]);
+
+//Adding data here
+function ready(error, guns, us) {
+  if (error) return console.warn(error);
+
+//Let's get a sense of our data
+  console.log(us);
+  console.log(topojson.feature(us, us.objects.counties).features);
+  console.log(guns);
+
+  //We give our data easy to understand names
+  var countyFeatures = topojson.feature(us, us.objects.counties).features;
+  var stateFeatures = topojson.feature(us, us.objects.states).features;
+
+  //If you want to use a different type of maps, you need to add something like this: var projection = d3.geo.mercator(): (Google this based on the data that you find)
+
+//This draws the map for you. It is the line projection
+  var path = d3.geo.path();
+      // .projection(projection);--- This is used if you are using the d3.geo.mercator() or another type of map library
+
+
+//Create an empty object, for the location 
+  locationLookup = {};
+
+//This is data manipulation: for every data point, make a pair of the FIPS # and gun#
+ guns.forEach(function(d) {
+      locationLookup[d.FIPS] = d.county;
+  })
+
+//Create an empty object, for the guns #s
+  gunsLookup = {};
+
+//Define the empty object, data manipulation: for every data point make a pair of the FIPS # and gun #
+  guns.forEach(function(d) {
+      d.count3 = +d.count3;
+      gunsLookup[d.FIPS] = d.count3;
+  })
+
+//Let's see what this does
+console.log(gunsLookup)
+
+//This draws the counties, including the fill. The fill is determined dynamically from the gunLookup object that we created above
+  svg.selectAll(".counties")
+      .data(countyFeatures)
+      .enter().append("path")
+      .attr("class","counties")
+      .attr("d", path)
+      .style("fill", function(d) {
+      return colorScale(gunsLookup[d.id])
+          //If we just want two basic colors, we should use styling like this:
+          //return gunsLookup[d.id] > 0 ? "#ff9966" : "#fff" ;
+
+      })
+
+  //Add hover functionality. "This" refers to the county borders. #countytext is the data labels
+      .on("mouseenter", function(d) {
+
+          console.log(d);
+
+          d3.select(this)
+          .style("stroke-width", 1.5)
+          .style("stroke-dasharray", 0)
+
+          d3.select("#countyText")
+          .transition()
+          .style("opacity", 1)
+          .style("left", (d3.event.pageX) + "px")
+          .style("top", (d3.event.pageY) + "px")
+          .text(" Number of guns bought in Chicago found in " + locationLookup[d.id] + " county: " + gunsLookup[d.id]);
+
+      })
+//When hover ends, county text and county borders go back to their default, which is invisible
+      .on("mouseleave", function(d) { 
+
+          d3.select(this)
+          .style("stroke-width", .25)
+          .style("stroke-dasharray", 1)
+
+          d3.select("#countyText")
+          .transition()
+          .style("opacity", 0);
+      } );
+
+//Add outlines for states
+  svg.selectAll(".states")
+      .data(stateFeatures)
+      .enter().append("path")
+      .attr("class","states")
+      .attr("d", path)
+      .style("fill", "none")
+      .style("stroke","#000")
+
+//Adds circles to each county
+  svg.selectAll(".bubbles")
+      .data(countyFeatures)
+      .enter().append("g")
+      .attr("class","bubbles")
+      .attr("transform",function(d) { 
+    //The placement of the bubbles is determined by the countyFeature data (centroid), this is why we bind the data to countyFeatures
+          return "translate(" + path.centroid(d) + ")"})
+      .append("circle")
+
+  //Make the radius of the circle based on the number of guns. Use 2*pi*R to make the perimeter of the circle appropriately sized
+      .attr("r", function(d) {
+           return Math.sqrt(gunsLookup[d.id])/Math.PI;
+      })
+      .style("fill", function(d) {
+           return colorScaleCircles(gunsLookup[d.id]);
+      })
+   .style("fill-opacity", .55)
+   .style("stroke", "#000")
+   .style("stroke-width", "1px")
+
+    .on("mouseenter", function(d) {
+          d3.select(this)
+          .style("stroke-width", "3px")
+          .style("stroke", "#000066")
+
+          d3.select("#countyText")
+          .transition()
+          .style("opacity", 1)
+          .style("left", (d3.event.pageX) + "px")
+          .style("top", (d3.event.pageY) + "px")
+         .text(" Number of guns bought in Chicago found in " + locationLookup[d.id] + " county: " + gunsLookup[d.id]);
+
+      })
+    .on("mouseleave", function(d) { 
+
+          d3.select(this)
+          .style("stroke-width", "1px")
+          .style("stroke","#000")
+
+          d3.select("#countyText")
+          .transition()
+          .style("opacity", 0);
+      } );
+
+}
+
+
+</script>

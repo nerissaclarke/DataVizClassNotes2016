@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style type="text/css">
+
+.counties {
+  fill: none;
+  stroke: #000;
+  stroke-width: .25px;
+}
+
+</style>
+
+<body>
+
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+
+<script type="text/javascript">
+  
+var width = 960,
+    height = 500;
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+queue()
+    .defer(d3.csv, "guns-history.csv")
+    .defer(d3.json, "us.json")
+    .await(ready);
+
+
+//var colorScale = d3.scale.linear()
+//   .range(['white', 'red']);
+
+//var colorScale = d3.scale.pow()
+//    .exponent(.2)
+//    .range(['white','red'])
+
+
+var colorScale = d3.scale.threshold() 
+    .domain([0.0, 1.0, 100.0 , 500.0, 15000.0])
+    .range(["#fff", "#dadaeb", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f"]);
+
+function ready(error, guns, us) {
+  if (error) return console.warn(error);
+
+  console.log(us);
+  console.log(topojson.feature(us, us.objects.counties).features);
+  console.log(guns);
+  var countyFeatures = topojson.feature(us, us.objects.counties).features;
+
+  var stateFeatures = topojson.feature(us, us.objects.states).features;
+// var projection = d3.geo.mercator()
+
+  var path = d3.geo.path();
+      // .projection(projection);
+
+  gunsLookup = {};
+
+  guns.forEach(function(d) {
+      d.count3 = +d.count3;
+      gunsLookup[d.FIPS] = d.count3;
+  })
+
+  //colorScale.domain(d3.extent(guns, function(d) { return d.count3; }));
+
+   // gunsLookup[d.FIPS] = {"guns:" d.count3 "state:" STATE;};
+
+console.log(gunsLookup)
+
+  svg.selectAll(".counties")
+      .data(countyFeatures)
+      .enter().append("path")
+      .attr("class","counties")
+      .attr("d", path)
+      .style("fill", function(d) {
+          return colorScale(gunsLookup[d.id]);
+
+          //console.log(d);
+          //return gunsLookup[d.id] > 0 ? 'red' : 'white';
+
+      })
+
+
+svg.selectAll(".states")
+      .data(stateFeatures)
+      .enter().append("path")
+      .attr("class","states")
+      .attr("d", path)
+      .style("fill", "none")
+      .style("stroke", "#000");
+
+
+}
+
+
+</script>

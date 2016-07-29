@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
+
+<style type="text/css">
+  /*css to go here*/
+  body {
+    font-family: arial;
+    width: 720px;
+    margin: 20px auto;
+  }
+
+  h1{
+    text-align: center;
+    font-family: Helvetica;
+    color: #C00000;
+    font-weight: bold;
+  }
+
+  /* If you want to see where the SVG is on the page, it can be good to give it a border, as seen below */
+  svg {
+    background: #f8f8f8 ;
+    border:5px solid #7f7f7f;
+  }
+  .axis text {
+    font-family: Arial;
+    font-weight: bold;
+    font-size: 15px;
+    fill: black;
+  }
+  /* Display path will fill in the background of the chart area with a color. 
+  Display: none allows you to see the gridlines. 
+  Fill: none, with stroke shows the axis lines (in a box)) */
+  
+  .axis path{
+  fill: none;
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+  stroke: #ccc;
+}
+
+/*.axis line is for the gridlines*/
+
+.axis line{ 
+  stroke-dasharray: 2px 2px;
+  stroke: gray;
+  stroke-opacity: .33;
+  stroke-width:1px;
+  }
+
+  /*Data labels: Fill is the font color*/
+  .anscombe-circle-group text {
+    fill: #7f7f7f;
+    font-size: 11px;
+  }
+
+  /*Decribes the circles themselves. Stroke/Stroke width describe the outline of the circle*/
+  .anscombe-circle-group circle {
+    fill: #C00000;
+    stroke: black;
+    stroke-width:1.5px;
+  }
+
+</style>
+
+<body>
+<h1> Anscombe's Quartet: Group II</h1>
+</body>
+
+<script>
+//Margins
+var margin = {top: 30, right: 50, bottom: 30, left: 50};
+var width = 720 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+//Scale (continuous variables)
+var xScale = d3.scale.linear()
+    .range([0, width]);
+var yScale = d3.scale.linear()
+    .range([height, 0]);
+
+//Axes
+//Tick size adds gridlines. Tick padding explains how far away the labels are from the axes.
+//Orient tells you where the axes will be
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .tickSize(-height)
+    .tickPadding(8)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .tickSize(width)
+    .tickPadding(8)
+    .orient("left");
+
+//Add an SVG to hold our data. Make it a group. Transform/Translate here moves the SVG within the appropriate margins
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//Add reference to data here. Make sure that your code related to the data is within the function for the data 
+d3.tsv("quartet.tsv", function(error, data) {
+   if (error) return console.warn(error);
+
+  //This is a great place to add new variables (They will act as new columns in the data set)
+   data.forEach(function(d) {
+    d.x = +d.x;
+    //+d.y here ensures that d.y is read as an integer, not just as a string
+    d.y = +d.y;
+   })
+   
+   //Filter the data so that it only shows one group
+  var groupTwoData = data.filter(function(d) { return d.group == 'II'; })
+
+  //Assign values to the x and y Scales dynamically. This is used to link input data to the range (output) that is seen on the screen
+  //Extent function returns the min and max of an array
+ //xScale.domain(d3.extent(groupTwoData, function(d) { return d.x }));
+yScale.domain(d3.extent(groupTwoData, function(d) { return d.y })).nice()
+  //To change the size of the X axis(Adds +/- 5 onto the x Axis data points, write some code like this:
+xScale.domain(d3.extent(groupTwoData, function(d) { return d.x; }).map(function(d,i) { if(i==0) { return d-1; } else { return d+1 }}))//
+
+
+  //Create groups for the X and Y axis. Assign them a class so that you can use CSS to style the axes. Call the axes to make sure they show up on the page
+  svg.append("g")
+      .attr("class", "axis")
+      .attr("transform", "translate(0," + (height) + ")")
+      .call(xAxis);
+  svg.append("g")
+      .attr("class", "axis")
+      .attr("transform", "translate(" + (width) + ",0)")
+      .call(yAxis);
+
+  //Create a circle group that uses the data. Connect the data to the circle groups using a data bind. 
+  //Place this group where the circles will go using the transform, translate function
+  var circleGroup = svg.selectAll(".anscombe-circle-group")
+      .data(groupTwoData)
+    .enter()
+      .append("g")
+      .attr("class", "anscombe-circle-group")
+      .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")"; });
+  
+  //Give the circle groups characteristics. Add the circle shape and add data labels
+  circleGroup.append("circle")
+      .attr("r", 7)
+      .style("stroke-opacity", ".5");
+      //if you want the size of the circles to be assigned randomly, the code looks like this:
+      //.attr("r", function(d,i) { return Math.random()*10; });
+
+  //To enable hover or manipulation of each point, you need to give a different class to each of the data points, and then split the points out of the group by their unique class
+  circleGroup.append("text")
+      .attr("class",function(d,i) { return "T" + i })
+      .text(function(d) { return "(" + d.x + "," + d.y + ")"; })
+      .attr("dx", 10)
+      .attr("dy", 3);
+ 
+ //var myClass = d3.select(circleGroup).attr("class").split(" ")[1];
+
+ //console.log(myClass);
+
+//Move the data label of certail points into a different spot, so that it is still on the chart
+ 
+circleGroup.select(".T0")
+    .attr("transform", function(d) { return "translate(0, 10)"; });
+
+circleGroup.select(".T4")
+    .attr("transform", function(d) { return "translate(-3, -5)"; });
+ 
+ 
+ //End of the d3.tsv function here 
+});
+
+</script>

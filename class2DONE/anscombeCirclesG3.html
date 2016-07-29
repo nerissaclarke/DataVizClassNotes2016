@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style type="text/css">
+  /*css to go here*/
+
+.axis path {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2;
+}
+
+.axis line {
+    stroke: #bfbfbf;
+    stroke-width: 2;
+    stroke-dasharray: 3;
+    /*stroke-opacity: .25;*/
+}
+
+.anscombe-circles {
+
+    fill: red;
+    fill-opacity: .75;
+
+}
+.axis text {
+    font: 12px sans-serif;
+}
+
+</style>
+
+<body></body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
+<script>
+  //JS to go here
+
+var anscombeData = [
+	{'group':'III',	'x': 10, 'y': 	7.46},
+	{'group':'III',	'x': 8 , 'y': 6.77},
+	{'group':'III',	'x': 13, 'y': 	12.74},
+	{'group':'III',	'x': 9 , 'y': 7.11},
+	{'group':'III',	'x': 11, 'y': 	7.81},
+	{'group':'III',	'x': 14, 'y': 	8.84},
+	{'group':'III',	'x': 6	, 'y': 6.08},
+	{'group':'III',	'x': 4	, 'y': 5.39},
+	{'group':'III',	'x': 12, 'y': 	8.15},
+	{'group':'III',	'x': 7	, 'y': 6.42},
+	{'group':'III',	'x': 5	, 'y': 5.73}
+];
+
+console.log(anscombeData);
+
+var margin = {top: 50, right: 50, bottom: 50, left: 50};
+
+var width = 500 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var svg = d3.select("body")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform","translate(" + margin.left  + "," + margin.top + ")")
+
+var xScale = d3.scale.linear()
+    .domain([0,15])
+    .range([0, width])
+
+var yScale = d3.scale.linear()
+    .domain([0,15])
+    .range([height, 0])
+
+
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .ticks(15)
+    .tickSize(-height)
+    .orient("bottom");
+
+ var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .ticks(15)
+    .tickSize(-width)
+    .orient("left");   
+
+
+
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform","translate(0," + height + ")" )
+    .call(xAxis)
+
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+
+// var circles = svg.selectAll(".anscombe-circles")
+//     .data(anscombeData)
+//     .enter().append("circle")
+//     .attr("class","anscombe-circles")
+//     .attr("cx", function(d) { return xScale(d.x) })
+//     .attr("cy", function(d) { return yScale(d.y); })
+//     .attr("r", function(d,i) { return Math.random()*10; });
+
+
+var circleGroups = svg.selectAll(".anscombe-circle-group")
+    .data(anscombeData)
+    .enter().append("g")
+    .attr("class","anscombe-circle-group")
+    .attr("transform",function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")" })
+
+circleGroups.append("text")
+    .attr("class",function(d,i) { return "T" + i })
+    .attr("dx", 5)
+    .attr("dy", 5)
+    .text(function(d) { return d.x + ", " + d.y; })
+    .style("fill","none")
+    .style("font","8px sans-serif")
+
+circleGroups.append("circle")
+   .attr("class",function(d,i) { return "anscombe-circles T" + i; })
+   .attr("r", 5)
+   .on("mouseenter", function() { 
+        var myClass = d3.select(this).attr("class").split(" ")[1];
+        d3.selectAll("." + myClass)
+        .style("fill","#000")
+   })
+   .on("mouseleave", function() { 
+        
+        d3.selectAll(".anscombe-circle-group")
+          .selectAll("text")
+          .style("fill","none")
+
+       d3.selectAll(".anscombe-circles")
+          .style("fill","red")
+   });
+
+svg.append("line")
+   .attr("x1", 0)
+   .attr("x2", width)
+   .attr("y1", height)
+   .attr("y2", height)
+   .style("stroke","#000")
+
+console.log("domain", xScale.domain())
+console.log("range", xScale.range())
+
+</script>
+
+
+

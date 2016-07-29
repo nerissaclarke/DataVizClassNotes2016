@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
+
+<style type="text/css">
+ 
+ div { 
+
+  display: inline-block;
+
+ }
+
+
+ .varietyLines {
+
+  stroke-width: 3;
+  stroke-dasharray: 5;
+
+ }
+
+</style>
+
+<body>
+</body>
+
+<script>
+
+var margin = {top: 20, right: 40, bottom: 40, left: 50};
+var width = 600 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+var xScale = d3.scale.ordinal()
+    .domain(['1931','1932'])
+    .rangePoints([0, width/2]);
+
+var yScale = d3.scale.linear()
+  .range([height, 0]);
+
+var colorScale = d3.scale.category10();
+
+var xAxis = d3.svg.axis()
+  .scale(xScale)
+  .orient("bottom")
+
+var yAxis = d3.svg.axis()
+  .scale(yScale)
+  .orient("left")
+
+
+d3.tsv("barley.tsv", function(error, data) {
+
+   if (error) return console.warn(error);
+
+   data.forEach(function(d) {
+    d.yield = +d.yield;
+   })
+
+var places = d3.set(data.map(function(d) { return d.site })).values();
+
+   drawSlopeGraph('Crookston', 60);
+
+`
+d3.select("body").append("input")
+  .attr("type", "range")
+  .attr("min", 30)
+  .attr("max", 100)
+  .attr("step", 5)
+  .on("change", function() {
+
+    var myValue = this.value
+
+
+    d3.select("svg").remove()
+    d3.select("h2").remove()
+
+     drawSlopeGraph('Crookston', myValue);
+
+  })
+   // drawSlopeGraph('Morris');
+
+function drawSlopeGraph(sitePlace, maxYDomain) {
+
+var div = d3.select("body").append("div")
+
+
+div.append("h2").text(sitePlace);
+
+  var svg = div.append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+yScale.domain([d3.min(data, function(d) { return d.yield }), maxYDomain]);
+
+  svg.append("g")
+    .attr("class","y axis")
+    .call(yAxis)
+
+  svg.append("g")
+    .attr("class","x axis")
+    .attr("transform","translate(0," + height + ")")
+    .call(xAxis)
+
+  var crookstonData = data.filter(function(d) { return d.site == sitePlace; })
+
+  var data1931 = crookstonData.filter(function(d) { return d.year == '1931' })
+  var data1932 = crookstonData.filter(function(d) { return d.year == '1932' })
+
+  console.log(data1931)
+
+
+  var circleGroup1932 = svg.selectAll(".circleGroup1932")
+      .data(data1932)
+      .enter().append("g")
+      .attr("class", "circleGroup1932" )
+      .attr("transform", function(d) { return "translate(" + xScale(d.year) + "," + yScale(d.yield) + ")"});
+
+ circleGroup1932.append("circle")
+    .attr("r", 5)
+    .style("fill",function(d) { return colorScale(d.variety); });
+
+    d3.selectAll("circle")
+      .on("mouseover", function() {
+
+      d3.select(this)
+        .transition()
+        .duration(10000)
+        .ease("elastic")
+        .attr("r", 100)
+
+
+      })
+
+
+circleGroup1932.append("text")
+  .attr("dx", 8)
+  .attr("class", function(d) { return d.variety.replace(".","").replace(" ",""); })
+  .text(function(d) { return d.variety; })
+  .style("fill", function(d) { return colorScale(d.variety); })
+
+  var circleGroup1931 = svg.selectAll(".circleGroup1931")
+      .data(data1931)
+      .enter().append("g")
+      .attr("class", "circleGroup1931" )
+      .attr("transform", function(d) { return "translate(" + xScale(d.year) + "," + yScale(d.yield) + ")"});
+
+ circleGroup1931.append("circle")
+    .attr("r", 5)
+    .style("fill",function(d) { return colorScale(d.variety); });
+
+  var nestedData = d3.nest()
+    .key(function(d) { return d.variety })
+    .entries(crookstonData);
+
+    console.log("our nested data", nestedData);
+
+    var varietyLines = svg.selectAll(".varietyLines")
+        .data(nestedData)
+      .enter().append("line")
+        .attr("class", "varietyLines")
+        .attr("x1", function(d) { return xScale(d.values[0].year);  })
+        .attr("x2", function(d) { return xScale(d.values[1].year);  })
+        .attr("y1", function(d) { return yScale(d.values[0].yield);  })
+        .attr("y2", function(d) { return yScale(d.values[1].yield);  })
+        .style("stroke",function(d) { return colorScale(d.key); });
+}
+
+ });
+
+
+</script>

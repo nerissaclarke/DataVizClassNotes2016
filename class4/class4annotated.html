@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
+
+<style type="text/css">
+ 
+ div { 
+
+  display: inline-block;
+
+ }
+
+</style>
+
+<body>
+</body>
+
+<script>
+//This is the Slope Graph chart using the barley data
+//Margins
+var margin = {top: 20, right: 40, bottom: 40, left: 50};
+var width = 400 - margin.left - margin.right,
+    height = 200 - margin.top - margin.bottom;
+
+//Scales for the axes to use
+var xScale = d3.scale.ordinal()
+    .domain(['1931','1932'])
+    .rangePoints([0, width/2]);
+
+var yScale = d3.scale.linear()
+  .range([height, 0]);
+
+//This is an automatic color scale that is found within D3
+var colorScale = d3.scale.category10();
+
+//Axes
+var xAxis = d3.svg.axis()
+  .scale(xScale)
+  .orient("bottom")
+
+var yAxis = d3.svg.axis()
+  .scale(yScale)
+  .orient("left")
+
+//Add the data here, from a TSV file
+d3.tsv("barley.tsv", function(error, data) {
+
+   if (error) return console.warn(error);
+//Manipulate the data so that all of the data with a +d. prefix is read by the computer as an integer, not a string
+   data.forEach(function(d) {
+    d.yield = +d.yield;
+   })
+
+//Use d3.set for ordinal scales. Include within the data function so that it can access data
+//.values(); prints out the names of each of the sites
+
+var places = d3.set(data.map(function(d) { return d.site })).values();
+
+//Understand the data & its Structure
+console.log(data);
+console.log(places);
+
+//This adds a chart for each site, using the function written out below
+places.forEach(function(d) { 
+  drawSlopeGraph(d);
+
+})
+
+//Alteranatively, you could add each of them individually
+   // drawSlopeGraph('Crookston');
+   // drawSlopeGraph('Morris');
+
+//When you want to do small multiples (or lots of versions of the same chart to use for a filter), it makes sense to create a function
+
+//sitePlace here is an empty value (think x). When you want to call the function you pass the data you want to run through the sitePlace variable
+function drawSlopeGraph(sitePlace) {
+
+//Add new div
+var div = d3.select("body").append("div")
+
+//Title for each new div
+div.append("h2").text(sitePlace);
+
+  var svg = div.append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//d3.extent gives you the min/max from the data. If you want a few more values as a buffer add .nice(); at the end
+yScale.domain(d3.extent(data, function(d) { return d.yield }));
+
+  svg.append("g")
+    .attr("class","y axis")
+    .call(yAxis)
+
+  svg.append("g")
+    .attr("class","x axis")
+    .attr("transform","translate(0," + height + ")")
+    .call(xAxis)
+
+//filter data to narrow it down. It's good to have an initial state. It can change later in the function to a different state (I THINK)
+
+//By labeling the filter == sitePlace, it will change based on the site it is at, and this will affect the nestedData
+  var placeData = data.filter(function(d) { return d.site == sitePlace; })
+  var data1931 = placeData.filter(function(d) { return d.year == '1931' })
+  var data1932 = placeData.filter(function(d) { return d.year == '1932' })
+
+  console.log(data1931)
+
+//Use filtered data to draw the circles and lines for each of the years onto the svg. 
+//To add shapes that use data, you must first do a data bind
+
+//Add circle group based on the data first (this makes it easier to add both circles and text in the same spot)
+  var circleGroup1932 = svg.selectAll(".circleGroup1932")
+      .data(data1932)
+      .enter().append("g")
+      .attr("class", "circleGroup1932" )
+      .attr("transform", function(d) { return "translate(" + xScale(d.year) + "," + yScale(d.yield) + ")"});
+
+ circleGroup1932.append("circle")
+    .attr("r", 5)
+    .style("fill",function(d) { return colorScale(d.variety); });
+
+circleGroup1932.append("text")
+  .attr("dx", 8)
+  .attr("class", function(d) { return d.variety.replace(".","").replace(" ",""); })
+  .text(function(d) { return d.variety; })
+  .style("fill", function(d) { return colorScale(d.variety); })
+
+  var circleGroup1931 = svg.selectAll(".circleGroup1931")
+      .data(data1931)
+      .enter().append("g")
+      .attr("class", "circleGroup1931" )
+      .attr("transform", function(d) { return "translate(" + xScale(d.year) + "," + yScale(d.yield) + ")"});
+
+ circleGroup1931.append("circle")
+    .attr("r", 5)
+    .style("fill",function(d) { return colorScale(d.variety); });
+
+
+//Use nested Data to create the lines that connect the 1931 and 1932 dots together by variety. The place data used for the nest will change based on what is being passed through it (the place.forEach command above) 
+
+  var nestedData = d3.nest()
+    .key(function(d) { return d.variety })
+    .entries(placeData);
+
+    console.log("our nested data", nestedData);
+
+    var varietyLines = svg.selectAll(".varietyLines")
+        .data(nestedData)
+      .enter().append("line")
+      //d.values[0] or [1] is the array that includes either 1931 or 1932
+        .attr("x1", function(d) { return xScale(d.values[0].year);  })
+        .attr("x2", function(d) { return xScale(d.values[1].year);  })
+        .attr("y1", function(d) { return yScale(d.values[0].yield);  })
+        .attr("y2", function(d) { return yScale(d.values[1].yield);  })
+
+        //Base the shade of the line on the color of the key: which is the variety here
+        .style("stroke",function(d) { return colorScale(d.key); });
+
+//This is the end of the drawSlopeGraph function
+}
+
+//This is the end of the data function
+ });
+
+
+</script>

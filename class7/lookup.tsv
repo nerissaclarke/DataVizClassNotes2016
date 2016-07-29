@@ -1,0 +1,31 @@
+code	league	division	cityname	teamname
+ARI	NL	west	Arizona	Diamondbacks
+ATL	NL	east	Atlanta	Braves
+CHC	NL	central	Chicago	Cubs
+CIN	NL	central	Cincinnati	Reds
+COL	NL	west	Colorado	Rockies
+LAD	NL	west	Los Angeles	Dodgers
+MIA	NL	east	Miami	Marlins
+MIL	NL	central	Milwaukee	Brewers
+NYM	NL	east	New York	Mets
+PHI	NL	east	Philadelphia	Phillies
+PIT	NL	central	Pittsburgh	Pirates
+SDP	NL	west	San Diego	Padres
+SFG	NL	west	San Francisco	Giants
+STL	NL	central	St. Louis	Cardinals
+WSN	NL	east	Washington	Nationals
+BAL	AL	east	Baltimore	Orioles
+BOS	AL	east	Boston	Red Sox
+CHW	AL	central	Chicago	White Sox
+CLE	AL	central	Cleveland	Indians
+DET	AL	central	Detroit	Tigers
+HOU	AL	west	Houston	Astros
+KCR	AL	central	Kansas City	Royals
+LAA	AL	west	Los Angeles	Angels
+MIN	AL	central	Minnesota	Twins
+NYY	AL	east	New York	Yankees
+OAK	AL	west	Oakland	Athletics
+SEA	AL	west	Seattle	Mariners
+TBR	AL	east	Tampa Bay	Rays
+TOR	AL	east	Toronto	Blue Jays
+TEX	AL	west	Texas	Rangers

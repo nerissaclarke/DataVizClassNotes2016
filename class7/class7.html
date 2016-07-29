@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<style type="text/css">
+ 
+body {
+  font: 8px sans-serif;
+}
+div {
+  display: inline-block;
+  border: 1px solid #000;
+  align: center;
+}
+.divisionText {
+  font: 20px sans-serif;
+}
+.domain {
+  fill: none;
+  stroke: #000;
+}
+.axis line {
+  stroke: #bfbfbf;
+  stroke-dasharray: 2, 2;
+}
+.teamLines {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2;
+}
+</style>
+<body>
+</body>
+<script>
+var margin = {top: 20, right: 50, bottom: 20, left: 20};
+var width = 1000 - margin.left - margin.right,
+    height = 250 - margin.top - margin.bottom;
+var parseDate = d3.time.format("%Y-%m-%d").parse;
+d3.csv("games.csv", function(error, data) {
+   if (error) return console.warn(error);
+   console.log(data)
+   data.forEach(function(d) {
+    d.pct = +d.pct;
+    d.date_str2 = parseDate(d.date_str2);
+   });
+   var nestedData = d3.nest()
+    .key(function(d) { return d.league; })
+    .key(function(d) { return d.division; })
+    .key(function(d) { return d.team; })
+    .entries(data);
+    console.log(nestedData);
+    var leagueDivs = d3.select("body").selectAll(".leagueDivs")
+        .data(nestedData)
+      .enter().append("div")
+        .attr("class","leagueDivs");
+  leagueDivs.append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+  leagueDivs.append("h1")
+      .text(function(d) { return d.key; });
+    divisionScale = d3.scale.ordinal()
+      .domain(['west','east','central'])
+      .rangeRoundBands([0, width])
+    var offsetScale = d3.scale.ordinal()
+      .domain(['west','east','central'])
+      .rangePoints([0, 40, 60])
+    var divisionGroups = leagueDivs.select("svg").select("g")
+      .selectAll(".divisionGroups")
+      .data(function(d) { return d.values.sort(function(a, b) { return a.key < b.key }); })
+      .enter().append("g")
+      .attr("class",function(d) { return "divisionGroups " + d.key })
+      .attr("transform",function(d, i) { return "translate(" + (divisionScale(d.key) + offsetScale(d.key)) + ",0)" });
+      divisionGroups.append("text")
+        .attr("class","divisionText")
+        .text(function(d) { return d.key; })
+    var timeScale = d3.time.scale()
+      .domain(d3.extent(data, function(d) { return d.date_str2; }))
+      .range([0, divisionScale.rangeBand()]);
+    var percentScale = d3.scale.linear()
+      .domain([0,1])
+      .range([height, 0]);
+  var xAxis = d3.svg.axis()
+      .orient("bottom")
+      .scale(timeScale)
+      .tickSize(-height);
+  var yAxis = d3.svg.axis()
+      .orient("left")
+      .scale(percentScale)
+      .tickSize(-divisionScale.rangeBand())
+    divisionGroups.append("g")
+        .attr("class", "x axis")
+        .attr("transform","translate(0," + height + ")")
+        .call(xAxis)
+   divisionGroups
+      .append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    var teamLineGenerator = d3.svg.line()
+      .interpolate("basis")
+      .x(function(d) { return timeScale(d.date_str2); })
+      .y(function(d) { return percentScale(d.pct); })
+  var strokeDashArrayScale = d3.scale.ordinal()
+    .domain(d3.set(data.map(function(d) { return d.team })).values())
+    .range(d3.range(35))
+    divisionGroups.selectAll(".teamLines")
+      .data(function(d) { return d.values })
+      .enter().append("path")
+      .attr("class","teamLines")
+      .style("stroke-dasharray", function(d,i) { 
+        var dashArrayValue = i*2;
+        return  dashArrayValue + "," + dashArrayValue
+    })
+      .attr("d", function(d) { return teamLineGenerator(d.values); })
+    divisionGroups.selectAll(".teamNames")
+      .data(function(d) { return d.values })
+      .enter().append("text")
+      .attr("class","teamNames")
+      .text(function(d) { return d.key; })
+      .attr("x", divisionScale.rangeBand())
+      .attr("y", function(d) { 
+        var lastValue = d.values[d.values.length - 1]
+        return percentScale(lastValue.pct);
+      })
+      d3.selectAll(".east")
+        .select(".y")
+        .selectAll("text")
+        .remove()
+      d3.selectAll(".central")
+        .select(".y")
+        .selectAll("text")
+        .remove()
+ });
+</script>

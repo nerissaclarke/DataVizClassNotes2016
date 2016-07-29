@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style type="text/css">
+  /*css to go here*/
+.axis path {
+    fill: none;
+    stroke: #000;
+    stroke-width: 1;
+}
+.axis line {
+    stroke: #000;
+    stroke-width: 1;
+    stroke-dasharray: 1, 2;
+}
+.anscombe-circles {
+    fill: steelblue;
+    fill-opacity: .75;
+    stroke: steelblue;
+}
+.axis text {
+    font: 12px sans-serif;
+}
+</style>
+<body>
+<div id='buttonSpot'>
+<h1> Group I Data </h1>
+</div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script>
+var margin = {top: 50, right: 50, bottom: 50, left: 50};
+var width = 500 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+var svg = d3.select("body")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform","translate(" + margin.left  + "," + margin.top + ")")
+var xScale = d3.scale.linear()
+    .domain([0,20])
+    .range([0, width])
+var yScale = d3.scale.linear()
+    .domain([0,20])
+    .range([height, 0])
+var colorScale = d3.scale.category10()
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .ticks(15)
+    .tickSize(-height)
+    .orient("bottom");
+ var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .ticks(15)
+    .tickSize(-width)
+    .orient("left");   
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform","translate(0," + height + ")" )
+    .call(xAxis)
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+d3.tsv("quartet.tsv", function(error, data) {
+  data.forEach(function(d) { 
+    // coercise the data into integers 
+    d.x = +d.x;
+    d.y = +d.y;
+  });
+  console.log(data);
+  nestedAnscombeData = d3.nest()
+    .key(function(d) { return d.group })
+    .entries(data);
+  var buttons = d3.select("#buttonSpot").selectAll(".anscombeButtons")
+    .data(nestedAnscombeData)
+  .enter().append("button")
+    .attr("class", "anscombeButtons")
+    .text(function(d) { return "Group " + d.key; })
+    .on("click", function(d) { updateChart(d.values, d.key) })
+  function updateChart(dataset, groupName) {
+    console.log(dataset);
+    var updatingGroups = d3.selectAll(".anscombe-circle-group")
+      .data(dataset)
+      .transition()
+      .ease("elastic")
+      .duration(6000)
+      .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")" })
+  updatingGroups.select("circle")
+     .style("fill", function(d) { return colorScale(d.group); })
+     
+  updatingGroups.select("text")
+      .text(function(d) { return d.x + ", " + d.y; })
+  d3.select("#buttonSpot").select("h1")
+    .text("Group " + groupName + " Data")
+  }
+  var filteredData = nestedAnscombeData.filter(function(d) { return d.key == 'I'; })
+  var circleGroups = svg.selectAll(".anscombe-circle-group")
+      .data(filteredData[0].values)
+    .enter().append("g")
+      .attr("class","anscombe-circle-group")
+      .attr("transform", function(d) { return "translate(" + xScale(d.x) + ",-100)" })
+  circleGroups.append("text")
+      .attr("dx", 5)
+      .attr("dy", 5)
+      .text(function(d) { return d.x + ", " + d.y; })
+      .style("fill","none")
+      .style("font","8px sans-serif")
+  circleGroups.append("circle")
+     .attr("class", "anscombe-circles")
+     .attr("r", 8)
+     .style("fill", function(d) { return colorScale(d.group); })
+  d3.selectAll(".anscombe-circle-group")
+     .on("mouseenter", function() { 
+          d3.select(this)
+            .select("circle")
+            .style("fill","#000")
+          d3.select(this)
+            .select("text")
+            .style("fill","#000")
+     })
+     .on("mouseleave", function() { 
+          d3.select(this)
+            .select("circle")
+            .style("fill", function(d) { return colorScale(d.group); })
+          d3.select(this)
+            .select("text")
+            .style("fill","none")
+     });
+     d3.selectAll(".anscombe-circle-group")
+     .transition()
+     .delay(1000)
+     .duration(2000)
+      .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")" })
+});
+</script>

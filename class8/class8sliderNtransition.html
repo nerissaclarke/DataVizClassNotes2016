@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style type="text/css">
+  /*css to go here*/
+.axis path {
+    fill: none;
+    stroke: #000;
+    stroke-width: 1;
+}
+.axis line {
+    stroke: #000;
+    stroke-width: 1;
+    stroke-dasharray: 1, 2;
+}
+.anscombe-circles {
+    fill: steelblue;
+    fill-opacity: .75;
+    stroke: steelblue;
+}
+.axis text {
+    font: 12px sans-serif;
+}
+</style>
+<body>
+<div id='buttonSpot'>
+<h1> Group I Data </h1>
+<input type='range' min='1' max='100' step='1' value='20' id='scaleRange'/><span id='sliderValue'></span>
+</div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script>
+
+//Margins
+var margin = {top: 50, right: 50, bottom: 50, left: 50};
+var width = (window.innerWidth*.75) - margin.left - margin.right,
+    height = (window.innerHeight*.75) - margin.top - margin.bottom;
+//Chart container
+var svg = d3.select("body")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform","translate(" + margin.left  + "," + margin.top + ")")
+
+//Hard coding the domain and range here based on the data
+var xScale = d3.scale.linear()
+    .domain([0,20])
+    .range([0, width])
+
+var yScale = d3.scale.linear()
+    .domain([0,20])
+    .range([height, 0])
+
+//Built in scales for color
+//WindowScale allows you to adjust the size of the chart. Is used later in the code
+var colorScale = d3.scale.category10()
+var windowScale = d3.scale.linear()
+  .range([2,20])
+  .domain([100,1200])
+
+//Axes
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .ticks(15)
+    .tickSize(-height)
+    .orient("bottom");
+ var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .ticks(15)
+    .tickSize(-width)
+    .orient("left");  
+
+//Call the axes so that they display on the webpage   
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform","translate(0," + height + ")" )
+    .call(xAxis)
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+
+//All the stuff above does not depend on the data. Everything else needs the data to work, which is why it is within the d3.tsv function
+
+d3.tsv("quartet.tsv", function(error, data) {
+  data.forEach(function(d) { 
+    // coerce the data into integers 
+    d.x = +d.x;
+    d.y = +d.y;
+  });
+
+  console.log(data);
+
+//Nest the data so that you can use the group for the Buttons
+  nestedAnscombeData = d3.nest()
+    .key(function(d) { return d.group })
+    .entries(data);
+
+//Create the buttons. Use the nested data (using d.key, d.values)
+  var buttons = d3.select("#buttonSpot").selectAll(".anscombeButtons")
+    .data(nestedAnscombeData)
+  .enter().append("button")
+    .attr("class", "anscombeButtons")
+    .text(function(d) { return "Group " + d.key; })
+    //This is the command that updates the chart
+    .on("click", function(d) { updateChart(d.values, d.key) })
+
+
+//Explain what you mean by saying "updateChart" here. At this point "dataset" and can be added to 
+  function updateChart(dataset, groupName) {
+    console.log(dataset);
+    //Grab the group of circles, connect them to the dataset and plot them on the graph
+    var updatingGroups = d3.selectAll(".anscombe-circle-group")
+      .data(dataset)
+      .transition()
+      .ease("elastic")
+      .duration(6000)
+      .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")" })
+
+//Give the circles a color, based on their group
+  updatingGroups.select("circle")
+     .style("fill", function(d) { return colorScale(d.group); })
+//Add text
+  updatingGroups.select("text")
+      .text(function(d) { return d.x + ", " + d.y; })
+//Make the header based on the group button selected
+  d3.select("#buttonSpot").select("h1")
+    .text("Group " + groupName + " Data")
+  } //update chart ends 
+
+//Find existing slider
+  d3.select("#scaleRange")
+    .on("input", function() { 
+      var sliderValue =  this.value;
+      console.log(sliderValue); 
+
+    //Add text to it that connects to the value
+      d3.select("#sliderValue")
+      .text(sliderValue)
+    //connect the y axis to the slider heree 
+      yScale.domain([0, sliderValue])
+      svg.select(".y")
+      .transition()
+      .call(yAxis);
+      d3.selectAll(".anscombe-circle-group")
+      .transition()
+      .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")" })
+    })
+
+  //I believe this is to set up the data for the initial view 
+  var filteredData = nestedAnscombeData.filter(function(d) { return d.key == 'I'; })
+  var circleGroups = svg.selectAll(".anscombe-circle-group")
+      .data(filteredData[0].values)
+    .enter().append("g")
+      .attr("class","anscombe-circle-group")
+      .attr("transform", function(d) { return "translate(" + xScale(d.x) + ",-100)" })
+  circleGroups.append("text")
+      .attr("dx", 5)
+      .attr("dy", 5)
+      .text(function(d) { return d.x + ", " + d.y; })
+      .style("fill","none")
+      .style("font","8px sans-serif")
+  circleGroups.append("circle")
+     .attr("class", "anscombe-circles")
+     .attr("r", windowScale(window.innerWidth))
+     .style("fill", function(d) { return colorScale(d.group); })
+
+  //This is to add labels upon hovering
+  d3.selectAll(".anscombe-circle-group")
+     .on("mouseenter", function() { 
+          d3.select(this)
+            .select("circle")
+            .style("fill","#000")
+          d3.select(this)
+            .select("text")
+            .style("fill","#000")
+     })
+     .on("mouseleave", function() { 
+          d3.select(this)
+            .select("circle")
+            .style("fill", function(d) { return colorScale(d.group); })
+          d3.select(this)
+            .select("text")
+            .style("fill","none")
+     });
+     d3.selectAll(".anscombe-circle-group")
+     .transition()
+     .delay(1000)
+     .duration(2000)
+      .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")" })
+});
+
+//Not sure what this does exactly
+d3.select(window)
+.on("resize", function() { 
+  console.log(window.innerWidth)
+  ; })
+</script>
+```

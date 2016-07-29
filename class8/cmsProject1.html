@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<style type="text/css">
+  /*css to go here*/
+
+.axis path {
+    fill: none;
+    stroke: #000;
+    stroke-width: 1;
+}
+
+.axis line {
+    stroke: #000;
+    stroke-width: 1;
+    stroke-dasharray: 1, 2;
+}
+
+.circles {
+    fill: steelblue;
+    fill-opacity: .75;
+    stroke: steelblue;
+}
+
+.axis text {
+    font: 12px sans-serif;
+}
+
+</style>
+
+<body></body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
+<script>
+
+//Margins
+var margin = {top: 50, right: 50, bottom: 50, left: 50};
+
+var width = 500 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+//Chart container
+var svg = d3.select("body")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform","translate(" + margin.left  + "," + margin.top + ")")
+//Scales
+var xScale = d3.scale.linear()
+    .domain([0,20])
+    .range([0, width])
+
+var yScale = d3.scale.linear()
+    .domain([0,20])
+    .range([height, 0])
+//Axes
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .ticks(15)
+    .tickSize(-height)
+    .orient("bottom");
+
+ var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .ticks(15)
+    .tickSize(-width)
+    .orient("left");   
+
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform","translate(0," + height + ")" )
+    .call(xAxis)
+
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+
+//Color scale for gender
+var colorScale = d3.scale.threshold() 
+    .domain(["male", "female", "total"])
+    .range(["steelblue", "pink", "green"]);
+
+//Add data
+d3.csv("ageAndGenderCMS.csv", function(error, data) {
+
+  data.forEach(function(d) { 
+    // coercise the data into integers 
+    d.Y2002 = +d.Y2002 ;
+    d.Y2004 = +d.Y2004 ;
+    d.Y2006 = +d.Y2006 ;
+    d.Y2008 = +d.Y2008 ;
+    d.Y2010 = +d.Y2010 ;
+
+  });
+
+  console.log(data);
+
+  var filteredData = data.filter(function(d) { return d.gY2010 == 'I'; })
+
+var colorScale = d3.scale.threshold() 
+    .domain(["male", "female", "total"])
+    .range(["black", "pink", "green"]);
+
+
+
+
+  var circleGroups = svg.selectAll(".anscombe-circle-group")
+      .data(filteredData)
+      .enter().append("g")
+      .attr("class","anscombe-circle-group")
+      .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")" })
+
+  circleGroups.append("text")
+      .attr("dx", 5)
+      .attr("dy", 5)
+      .text(function(d) { return d.x + ", " + d.y; })
+      .style("fill","none")
+      .style("font","8px sans-serif")
+
+  circleGroups.append("circle")
+     .attr("class", "anscombe-circles")
+     .attr("r", 8)
+
+  d3.selectAll(".anscombe-circle-group")
+     .on("mouseenter", function() { 
+
+          d3.select(this)
+            .select("circle")
+            .style("fill","#000")
+
+          d3.select(this)
+            .select("text")
+            .style("fill","#000")
+     })
+     .on("mouseleave", function() { 
+
+          d3.select(this)
+            .select("circle")
+            .style("fill","steelblue")
+
+          d3.select(this)
+            .select("text")
+            .style("fill","none")
+
+     });
+
+});
+
+</script>

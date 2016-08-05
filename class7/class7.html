@@ -32,55 +32,78 @@ div {
 <body>
 </body>
 <script>
+//Margins
 var margin = {top: 20, right: 50, bottom: 20, left: 20};
 var width = 1000 - margin.left - margin.right,
     height = 250 - margin.top - margin.bottom;
+
+//Timescale
 var parseDate = d3.time.format("%Y-%m-%d").parse;
+
+//Adding data
 d3.csv("games.csv", function(error, data) {
    if (error) return console.warn(error);
    console.log(data)
+ //Manipulate the data to read as integers
    data.forEach(function(d) {
     d.pct = +d.pct;
     d.date_str2 = parseDate(d.date_str2);
    });
+
+ //nest data set (triple nest. Go from biggest category to smallest)
    var nestedData = d3.nest()
     .key(function(d) { return d.league; })
     .key(function(d) { return d.division; })
     .key(function(d) { return d.team; })
     .entries(data);
     console.log(nestedData);
+
+//Create a div for the largest/highest level of the nest
     var leagueDivs = d3.select("body").selectAll(".leagueDivs")
         .data(nestedData)
       .enter().append("div")
         .attr("class","leagueDivs");
+
+//Add an svg within the div of the highest level, add a group
   leagueDivs.append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
     .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+//Add a header so that you can see what you are looking at. Assign text as "key" which is the highest level of the nest
   leagueDivs.append("h1")
       .text(function(d) { return d.key; });
+	//Create a new scale within the nested data that can be used to map out the lower level of the nest. Manually adding in the categories
     divisionScale = d3.scale.ordinal()
       .domain(['west','east','central'])
       .rangeRoundBands([0, width])
     var offsetScale = d3.scale.ordinal()
       .domain(['west','east','central'])
       .rangePoints([0, 40, 60])
+      //Create a group for level #2 of the nest. Grab the svg within level #1 of the nest and then add new data (which accesses level #2 of the nest)
     var divisionGroups = leagueDivs.select("svg").select("g")
       .selectAll(".divisionGroups")
+      //Sort the data during the data append
       .data(function(d) { return d.values.sort(function(a, b) { return a.key < b.key }); })
       .enter().append("g")
       .attr("class",function(d) { return "divisionGroups " + d.key })
+      //Making sure that the different data is showing up on the right part of the chart
       .attr("transform",function(d, i) { return "translate(" + (divisionScale(d.key) + offsetScale(d.key)) + ",0)" });
+      //Add label for level #2 of the nest (west/east/central)
       divisionGroups.append("text")
         .attr("class","divisionText")
         .text(function(d) { return d.key; })
+
+    //Use timescale to show the correct data on the x axes
     var timeScale = d3.time.scale()
       .domain(d3.extent(data, function(d) { return d.date_str2; }))
       .range([0, divisionScale.rangeBand()]);
+
     var percentScale = d3.scale.linear()
       .domain([0,1])
       .range([height, 0]);
+  //Add axes within the second level of the nest so that they correspond with the data associated with divisions (not leagues - level #1 or specific teams - level #3)
   var xAxis = d3.svg.axis()
       .orient("bottom")
       .scale(timeScale)
@@ -89,6 +112,7 @@ d3.csv("games.csv", function(error, data) {
       .orient("left")
       .scale(percentScale)
       .tickSize(-divisionScale.rangeBand())
+     //call the axes within the division (level #2 of nest), so that they show up
     divisionGroups.append("g")
         .attr("class", "x axis")
         .attr("transform","translate(0," + height + ")")
@@ -97,6 +121,7 @@ d3.csv("games.csv", function(error, data) {
       .append("g")
       .attr("class", "y axis")
       .call(yAxis)
+
     var teamLineGenerator = d3.svg.line()
       .interpolate("basis")
       .x(function(d) { return timeScale(d.date_str2); })

@@ -73,7 +73,7 @@ var xAxis = d3.svg.axis()
     .ticks(15)
     .tickSize(-width)
     .orient("left");   
-
+//Call axes to make them display on the web page
 svg.append("g")
     .attr("class", "x axis")
     .attr("transform","translate(0," + height + ")" )
@@ -93,6 +93,7 @@ d3.tsv("quartet.tsv", function(error, data) {
     d.y = +d.y;
 
   });
+
 //Look at the data, make sure it looks ok
   console.log(data);
 
@@ -108,13 +109,14 @@ d3.tsv("quartet.tsv", function(error, data) {
   .enter().append("button")
     .attr("class", "anscombeButtons")
     .text(function(d) { return "Group " + d.key; })
+    //This is how the buttons work: trigger the updateChart function
     .on("click", function(d) { updateChart(d.values, d.key) })
 
 //Create a function that updates the change when the buttons are clicked
   function updateChart(dataset, groupName) {
 
     console.log(dataset);
-
+//Look at dataset to see what data is included here
     var updatingGroups = d3.selectAll(".anscombe-circle-group")
       .data(dataset)
       .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")" })
@@ -125,15 +127,18 @@ d3.tsv("quartet.tsv", function(error, data) {
   d3.select("#buttonSpot").select("h1")
     .text("Group " + groupName + " Data")
   }
+//End of the function
 
+//Create an initial state
   var filteredData = nestedAnscombeData.filter(function(d) { return d.key == 'I'; })
 
+//Use nested data to create the circle groups here for the sake of the buttons. To access group 1, you write filteredData[0] to get Group I values (because the data is filtered the array only has the length of [0])
   var circleGroups = svg.selectAll(".anscombe-circle-group")
       .data(filteredData[0].values)
     .enter().append("g")
       .attr("class","anscombe-circle-group")
       .attr("transform", function(d) { return "translate(" + xScale(d.x) + "," + yScale(d.y) + ")" })
-
+//Text added here but no fill
   circleGroups.append("text")
       .attr("dx", 5)
       .attr("dy", 5)
@@ -145,6 +150,7 @@ d3.tsv("quartet.tsv", function(error, data) {
      .attr("class", "anscombe-circles")
      .attr("r", 8)
 
+//Hover. Select group first. "this" is given to us here
   d3.selectAll(".anscombe-circle-group")
      .on("mouseenter", function() { 
 
@@ -167,7 +173,8 @@ d3.tsv("quartet.tsv", function(error, data) {
             .style("fill","none")
 
      });
-
+     //End of hover
 });
+//End of Data
 
 </script>

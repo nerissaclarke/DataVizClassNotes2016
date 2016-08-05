@@ -20,6 +20,7 @@
  .axis text {
    font-size: 12px;
    fill: #777;
+   font-weight: bold;
  }
  .axis path {
    display: none;
@@ -29,6 +30,11 @@
    stroke: #ccc;
    stroke-dasharray: 2px 2px;
  }
+.axis {
+  stroke: 1 px;
+  fill: black;
+}
+
 
 </style>
 
@@ -128,11 +134,11 @@ console.log(sampleDataUF31);
       .attr("class", "y axis")
       .call(yAxis);
 
-//Create a group for UF 1931 data (Initial state)
 var barGroup = svg. selectAll(".bargroup")
    .data(sampleDataUF31)
    .enter().append("g")
     .attr("class", "bargroup")
+
 
 var bars = barGroup.selectAll(".bars")
    .data(sampleDataUF31)
@@ -145,7 +151,8 @@ var bars = barGroup.selectAll(".bars")
     //Apply colorscale here
     .style("fill", function(d){return colorScale(d.variety); })
     
-var dataLabels = svg.selectAll(".bartxt")
+
+var dataLabels = barGroup.selectAll(".bartxt")
   .data(sampleDataUF31)
   .enter().append("text")
    .text(function(d){return d.yield;})
@@ -156,71 +163,35 @@ var dataLabels = svg.selectAll(".bartxt")
      .style("fill", "none")
      .style("font-weight", "bold")
  
-var buttons = d3.select("#buttonSpot").selectAll("")
-    .data()
-  .enter().append("button")
-    .attr("class", "")
-    .text(function(d) { return "Group " + d.key; })
-    .on("click", function(d) { updateChart(d.values, d.key) })
 
+//On Hover add data labels: WHY ISN"T THIS WORKING??
+d3.selectAll(".bars")
+    .on("mouseenter", function(d) {
+         console.log(d);
+         d3.select(this)
+           .style("fill", "black")
+                    var barClass = d3.select(this)
+          .attr("class").split(" ")[1];.select("barClass")
+           .style("fill", "white") 
+           .style("font","14px sans-serif")
+           .style("fill", "none")
+           .style("font-weight", "bold")
+   }) 
 
-updateChart(sampleDataUF32, 1932);
-//Create a function that updates the change when the buttons are clicked
+//d3.select("barClass")
+ // .on("mouseenter", function(d){
+ //   d3.select(this)
+ //      
+ // })
 
-  function updateChart(dataset, year) {
-    //Look at dataset to see what data is included here
-    console.log(dataset);
+    .on("mouseleave", function() {
+      
+      d3.select(this)
+        .style("fill", function(d){return colorScale(d.variety); })
 
-    var bars = barGroup.selectAll(".bars")
-   .data(dataset)
-   .enter().append("rect")
-   .attr("class", "bars")
-   .attr("x", function(d) { return xScale(d.variety); })
-   .attr("width", xScale.rangeBand())
-   .attr("y", function(d) { return yScale(d.yield); })
-   .attr("height", function(d) { return height - yScale(d.yield); })
-    //Apply colorscale here
-    .style("fill", function(d){return colorScale(d.variety); })
-    
-    var dataLabels = svg.selectAll(".bartxt")
-    .data(dataset)
-    .enter().append("text")
-    .text(function(d){return d.yield;})
-    .attr("class", "bartxt")
-    .attr("x", function(d) { return xScale(d.variety)+10; })
-    .attr("y", function(d) { return yScale(d.yield) +25; })
-     .style("font","14px sans-serif")
-     .style("fill", "none")
-     .style("font-weight", "bold")
-
-    d3.select("#buttonSpot").select("h1")
-    .text("Barley Production in " + year)
-    }
-
-    d3.selectAll(".barGroup")
-     .on("mouseenter", function() { 
-
-          d3.select(this)
-            .select("rect")
-            .style("fill","#000")
-
-          d3.select(this)
-            .select("text")
-            .style("fill","#000")
-     })
-     .on("mouseleave", function() { 
-
-          d3.select(this)
-            .select("rect")
-            .style("fill","steelblue")
-
-          d3.select(this)
-            .select("text")
-            .style("fill","none")
-
-     });
-
-
+      dataLabels
+         .style("fill", "none")
+   })
 
 
 //Add Update Chart Function here. To allow you to choose between years

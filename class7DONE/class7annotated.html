@@ -32,6 +32,7 @@ div {
 <body>
 </body>
 <script>
+<<<<<<< Updated upstream:class7/class7.html
 //Margins
 var margin = {top: 20, right: 50, bottom: 20, left: 20};
 var width = 1000 - margin.left - margin.right,
@@ -45,12 +46,29 @@ d3.csv("games.csv", function(error, data) {
    if (error) return console.warn(error);
    console.log(data)
  //Manipulate the data to read as integers
+=======
+//margins
+var margin = {top: 20, right: 50, bottom: 20, left: 20};
+var width = 1000 - margin.left - margin.right,
+    height = 250 - margin.top - margin.bottom;
+//date format
+var parseDate = d3.time.format("%Y-%m-%d").parse;
+//Data
+d3.csv("games.csv", function(error, data) {
+   if (error) return console.warn(error);
+   console.log(data)
+   //manipulate the data to read as integers
+>>>>>>> Stashed changes:class7DONE/class7annotated.html
    data.forEach(function(d) {
     d.pct = +d.pct;
     d.date_str2 = parseDate(d.date_str2);
    });
+<<<<<<< Updated upstream:class7/class7.html
 
  //nest data set (triple nest. Go from biggest category to smallest)
+=======
+   //Triple Nest the data
+>>>>>>> Stashed changes:class7DONE/class7annotated.html
    var nestedData = d3.nest()
     .key(function(d) { return d.league; })
     .key(function(d) { return d.division; })
@@ -58,29 +76,48 @@ d3.csv("games.csv", function(error, data) {
     .entries(data);
     console.log(nestedData);
 
+<<<<<<< Updated upstream:class7/class7.html
 //Create a div for the largest/highest level of the nest
+=======
+    //Create Divs that access the top level of the nested data
+>>>>>>> Stashed changes:class7DONE/class7annotated.html
     var leagueDivs = d3.select("body").selectAll(".leagueDivs")
         .data(nestedData)
       .enter().append("div")
         .attr("class","leagueDivs");
+<<<<<<< Updated upstream:class7/class7.html
 
 //Add an svg within the div of the highest level, add a group
+=======
+//Add an SVG here for each league (that will hold 3 charts each)
+>>>>>>> Stashed changes:class7DONE/class7annotated.html
   leagueDivs.append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
     .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+<<<<<<< Updated upstream:class7/class7.html
 
 //Add a header so that you can see what you are looking at. Assign text as "key" which is the highest level of the nest
   leagueDivs.append("h1")
       .text(function(d) { return d.key; });
 	//Create a new scale within the nested data that can be used to map out the lower level of the nest. Manually adding in the categories
+=======
+  //Add a label (this is the AL vs NL label)
+  leagueDivs.append("h1")
+      .text(function(d) { return d.key; });
+
+  //use the 2nd level of the nested data (divisions) to create a scale ( because this is where the axes show up)
+      //manually add in the domain (west/east/central)
+>>>>>>> Stashed changes:class7DONE/class7annotated.html
     divisionScale = d3.scale.ordinal()
       .domain(['west','east','central'])
       .rangeRoundBands([0, width])
+      //Ensure that the data gets added into the correct spots
     var offsetScale = d3.scale.ordinal()
       .domain(['west','east','central'])
       .rangePoints([0, 40, 60])
+<<<<<<< Updated upstream:class7/class7.html
       //Create a group for level #2 of the nest. Grab the svg within level #1 of the nest and then add new data (which accesses level #2 of the nest)
     var divisionGroups = leagueDivs.select("svg").select("g")
       .selectAll(".divisionGroups")
@@ -91,11 +128,28 @@ d3.csv("games.csv", function(error, data) {
       //Making sure that the different data is showing up on the right part of the chart
       .attr("transform",function(d, i) { return "translate(" + (divisionScale(d.key) + offsetScale(d.key)) + ",0)" });
       //Add label for level #2 of the nest (west/east/central)
+=======
+
+//Select the SVG within the league div (still the full SVG size), then add division groups for each of the 3 divisions(divides the SVG g's into multiple parts for each division).
+    var divisionGroups = leagueDivs.select("svg").select("g")
+      .selectAll(".divisionGroups")
+      //To access the second level of the nest (the data here is sorted), select the top level of the data nest (ie league div) so that the code understands your reference, and then do a databind with the d.values of the nested data. 
+      .data(function(d) { return d.values.sort(function(a, b) { return a.key < b.key }); })
+      .enter().append("g")
+      .attr("class",function(d) { return "divisionGroups " + d.key })
+      //To ensure the charts are not overlapping, use the offset scale that you made above
+      .attr("transform",function(d, i) { return "translate(" + (divisionScale(d.key) + offsetScale(d.key)) + ",0)" });
+      //Add labels to each group
+>>>>>>> Stashed changes:class7DONE/class7annotated.html
       divisionGroups.append("text")
         .attr("class","divisionText")
         .text(function(d) { return d.key; })
 
+<<<<<<< Updated upstream:class7/class7.html
     //Use timescale to show the correct data on the x axes
+=======
+   //Axes: The timeScale, and percentScale are all for the axes
+>>>>>>> Stashed changes:class7DONE/class7annotated.html
     var timeScale = d3.time.scale()
       .domain(d3.extent(data, function(d) { return d.date_str2; }))
       .range([0, divisionScale.rangeBand()]);
@@ -112,7 +166,11 @@ d3.csv("games.csv", function(error, data) {
       .orient("left")
       .scale(percentScale)
       .tickSize(-divisionScale.rangeBand())
+<<<<<<< Updated upstream:class7/class7.html
      //call the axes within the division (level #2 of nest), so that they show up
+=======
+     //Call axes so that they will show up on the screen
+>>>>>>> Stashed changes:class7DONE/class7annotated.html
     divisionGroups.append("g")
         .attr("class", "x axis")
         .attr("transform","translate(0," + height + ")")
@@ -122,13 +180,22 @@ d3.csv("games.csv", function(error, data) {
       .attr("class", "y axis")
       .call(yAxis)
 
+<<<<<<< Updated upstream:class7/class7.html
+=======
+//Create lines based on the third level of the nest, with the use of a line generator
+>>>>>>> Stashed changes:class7DONE/class7annotated.html
     var teamLineGenerator = d3.svg.line()
+    //interpolate determines how the line connects the dots
       .interpolate("basis")
       .x(function(d) { return timeScale(d.date_str2); })
       .y(function(d) { return percentScale(d.pct); })
+
+//Create a variable that changes the line dash array based on the team names 
   var strokeDashArrayScale = d3.scale.ordinal()
+    //If you want to create the domain dynamically, this is what it would look like. data.map is used for ordinal categories .values() is used to access lower levels of the nest
     .domain(d3.set(data.map(function(d) { return d.team })).values())
     .range(d3.range(35))
+
     divisionGroups.selectAll(".teamLines")
       .data(function(d) { return d.values })
       .enter().append("path")
@@ -137,17 +204,24 @@ d3.csv("games.csv", function(error, data) {
         var dashArrayValue = i*2;
         return  dashArrayValue + "," + dashArrayValue
     })
+      //Access the line generator (aka this is the line that draws the line)
       .attr("d", function(d) { return teamLineGenerator(d.values); })
+
+//Within the second level of the nest now, you are looking to get the d.values (again, only going down one level at a time)
+//Division groups already accesses level 2 of the nest, d.values of division groups leads us to teams
     divisionGroups.selectAll(".teamNames")
       .data(function(d) { return d.values })
       .enter().append("text")
       .attr("class","teamNames")
       .text(function(d) { return d.key; })
       .attr("x", divisionScale.rangeBand())
+
+      //This is code that determines the placement of the labels
       .attr("y", function(d) { 
         var lastValue = d.values[d.values.length - 1]
         return percentScale(lastValue.pct);
-      })
+      	})
+      //General update pattern to remove things that no longer make sense when being updates. Doesn't seem to be the best way to remove things you don't like but here it is used to remove the y-axis labels on some but not all of the charts
       d3.selectAll(".east")
         .select(".y")
         .selectAll("text")
